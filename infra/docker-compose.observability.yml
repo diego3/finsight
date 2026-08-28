@@ -1,0 +1,99 @@
+# Observability stack for local development.
+#
+# Included by the root docker-compose.yml. All services sit behind the
+# "observability" profile, so the default `docker compose up` stays lean:
+#
+#   docker compose up                          # app only
+#   docker compose --profile observability up  # app + Prometheus + Grafana
+#
+# Paths here are resolved relative to this file (Compose `include` semantics).
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["observability"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+      # Lets k6 stream load-test metrics in via remote write.
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: ["observability"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  # Per-container CPU / memory / network metrics, read from the kernel cgroups.
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    profiles: ["observability"]
+    # snap Docker (v29) uses the containerd image store, so cAdvisor's Docker
+    # handler can't resolve the RW layer ID and drops every container. We point
+    # it at Docker's containerd instead (namespace "moby") and deliberately do
+    # NOT mount the Docker socket, so the containerd factory handles the cgroups.
+    # Trade-off: the containerd handler sets `name` to the 64-hex id and does not
+    # expose compose labels, so Prometheus derives a `cname` label from `image`
+    # (see prometheus.yml metric_relabel_configs).
+    command:
+      - --housekeeping_interval=5s
+      - --store_container_labels=false
+      - --containerd=/run/containerd/containerd.sock
+      - --containerd-namespace=moby
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /sys:/sys:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /dev/disk/:/dev/disk:ro
+      - /run/snap.docker/containerd/containerd.sock:/run/containerd/containerd.sock:ro
+    ports:
+      - "8081:8080"
+
+  # PostgreSQL internal metrics: tuples read/written, transactions, cache hit
+  # ratio, connections vs max_connections, locks, deadlocks.
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    profiles: ["observability"]
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-finsight}:${POSTGRES_PASSWORD:-finsight}@db:5432/${POSTGRES_DB:-finsight}?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - db
+
+  # Host-level metrics (CPU, memory, disk, network of the machine itself).
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    profiles: ["observability"]
+    command:
+      - --path.rootfs=/host
+    pid: host
+    volumes:
+      - /:/host:ro
+    ports:
+      - "9100:9100"
+
+volumes:
+  prometheus_data:
+  grafana_data:
