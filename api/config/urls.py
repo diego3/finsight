@@ -11,4 +11,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/", healthcheck, name="health"),
     path("api/", include("clients.urls")),
+    # Prometheus scrape endpoint. Public for local dev — put behind auth/network
+    # policy before any real deployment.
+    path("", include("django_prometheus.urls")),
 ]
