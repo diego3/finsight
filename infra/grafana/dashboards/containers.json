@@ -4,7 +4,7 @@
   "tags": ["finsight"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "10s",
   "time": { "from": "now-30m", "to": "now" },
   "panels": [
@@ -20,6 +20,11 @@
           "refId": "A",
           "expr": "rate(container_cpu_usage_seconds_total{cname=~\"finsight-api|finsight-web|postgres\"}[1m])",
           "legendFormat": "{{cname}}"
+        },
+        {
+          "refId": "B",
+          "expr": "container_spec_cpu_quota{cname=~\"finsight-api|finsight-web|postgres\"} / container_spec_cpu_period{cname=~\"finsight-api|finsight-web|postgres\"}",
+          "legendFormat": "{{cname}} (limit)"
         }
       ]
     },
@@ -101,6 +106,38 @@
           "refId": "A",
           "expr": "sum by (view, method) (rate(django_http_requests_total_by_view_transport_method_total{view!=\"prometheus-django-metrics\"}[1m]))",
           "legendFormat": "{{method}} {{view}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "CPU throttling (fraction of periods throttled)",
+      "description": "Share of CFS scheduler periods in which the container was throttled because it hit its cpu limit. Anything above 0 means the limit is being enforced against real demand.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(container_cpu_cfs_throttled_periods_total{cname=~\"finsight-api|finsight-web|postgres\"}[1m]) / clamp_min(rate(container_cpu_cfs_periods_total{cname=~\"finsight-api|finsight-web|postgres\"}[1m]), 1)",
+          "legendFormat": "{{cname}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "CPU throttled time",
+      "description": "Seconds of run time the container was denied per second, summed across its tasks.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(container_cpu_cfs_throttled_seconds_total{cname=~\"finsight-api|finsight-web|postgres\"}[1m])",
+          "legendFormat": "{{cname}}"
         }
       ]
     }
