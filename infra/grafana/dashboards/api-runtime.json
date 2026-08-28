@@ -1,0 +1,125 @@
+{
+  "uid": "finsight-api-runtime",
+  "title": "FinSight — API Runtime (Python)",
+  "tags": ["finsight", "python"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Process RSS",
+      "description": "Resident memory of the Django worker. CPython has no fixed heap/stack size to report; this process RSS is the real memory footprint.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "refId": "A", "expr": "process_resident_memory_bytes{job=\"django\"}" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Allocator blocks",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{ "refId": "A", "expr": "python_allocated_blocks{job=\"django\"}" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "GC-tracked objects",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{ "refId": "A", "expr": "python_gc_tracked_objects{job=\"django\"}" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Open file descriptors",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "process_open_fds{job=\"django\"}", "legendFormat": "open" },
+        { "refId": "B", "expr": "process_max_fds{job=\"django\"}", "legendFormat": "max" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Process memory (RSS vs virtual)",
+      "description": "RSS is real resident memory. Virtual is address space reserved (includes the Python VM, shared libs, mmaps) and is normally much larger — not a leak signal on its own.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "process_resident_memory_bytes{job=\"django\"}", "legendFormat": "RSS" },
+        { "refId": "B", "expr": "process_virtual_memory_bytes{job=\"django\"}", "legendFormat": "virtual" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Process CPU (cores)",
+      "description": "CPU consumed by the Python process itself (rate of process_cpu_seconds_total). Complements the cgroup CPU on the Containers dashboard.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "none", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(process_cpu_seconds_total{job=\"django\"}[1m])", "legendFormat": "cpu" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "GC collections/s by generation",
+      "description": "How often each generation is collected (rate of python_gc_collections_total). Gen 0 runs most; frequent gen 2 runs mean lots of long-lived objects churning.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(python_gc_collections_total{job=\"django\"}[1m])", "legendFormat": "gen {{generation}}" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "GC objects reclaimed/s by generation",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(python_gc_objects_collected_total{job=\"django\"}[1m])", "legendFormat": "gen {{generation}}" },
+        { "refId": "B", "expr": "rate(python_gc_objects_uncollectable_total{job=\"django\"}[5m])", "legendFormat": "uncollectable gen {{generation}}" }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "GC pending allocations by generation",
+      "description": "gc.get_count(): allocations minus deallocations since each generation was last collected. Gen 0 sawtooths up to its threshold (~700) then resets.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "python_gc_pending_objects{job=\"django\"}", "legendFormat": "gen {{generation}}" }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "tracemalloc traced memory",
+      "description": "Python-level allocations tracked by tracemalloc. Empty unless PYTHONTRACEMALLOC is set on the api service (it roughly doubles memory use).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "python_tracemalloc_bytes{job=\"django\"}", "legendFormat": "{{kind}}" }
+      ]
+    }
+  ]
+}

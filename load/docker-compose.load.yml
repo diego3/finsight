@@ -1,0 +1,22 @@
+# Load testing with k6. Included by the root docker-compose.yml, gated behind
+# the "load" profile so it never starts with a plain `docker compose up`.
+#
+# Run a scenario:
+#   docker compose --profile load run --rm k6 run /load/scenarios/smoke.js
+#
+# Stream results into Prometheus (also start --profile observability):
+#   docker compose --profile load --profile observability run --rm k6 \
+#     run -o experimental-prometheus-rw /load/scenarios/clients-crud.js
+
+services:
+  k6:
+    image: grafana/k6:0.53.0
+    profiles: ["load"]
+    environment:
+      BASE_URL: http://api:8000
+      K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
+      K6_PROMETHEUS_RW_TREND_STATS: "p(50),p(95),p(99),max"
+    volumes:
+      - ./:/load:ro
+    entrypoint: ["k6"]
+    command: ["run", "/load/scenarios/smoke.js"]

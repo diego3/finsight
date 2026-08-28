@@ -9,4 +9,63 @@ The project is developed feature-by-feature in a mentor-guided, phase-by-phase w
 model, tech stack, and all planned phases from project setup through production
 verification and architecture review).
 
-Status: planning stage — implementation has not started yet.
+Status: prototype in progress — first vertical slice (Client Management) being built.
+
+## Repository layout
+
+```
+api/        Django + DRF + PostgreSQL backend
+frontend/   React + TypeScript (Vite) single-page app
+infra/      Observability stack (Prometheus, Grafana, cAdvisor, node-exporter)
+load/       k6 load and stress tests
+docker-compose.yml   db + api + web for local development
+```
+
+## Running the prototype
+
+Requires Docker with Compose v2.
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+- Frontend: http://localhost:5173
+- API (DRF browsable): http://localhost:8000/api/
+- API health: http://localhost:8000/api/health/
+- API metrics: http://localhost:8000/metrics
+
+### With observability
+
+```bash
+docker compose --profile observability up --build
+```
+
+- Grafana: http://localhost:3000 (anonymous, or admin/admin)
+- Prometheus: http://localhost:9090
+
+See [`infra/README.md`](infra/README.md).
+
+### Load testing
+
+```bash
+docker compose --profile load run --rm k6 run /load/scenarios/smoke.js
+```
+
+See [`load/README.md`](load/README.md).
+
+Seed some sample clients:
+
+```bash
+docker compose exec api python manage.py seed
+```
+
+Run backend tests:
+
+```bash
+docker compose exec api pytest
+```
+
+Environment variables live in `.env` at the repo root (copied from
+`.env.example`; local-only dev values).
+

@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Per-container resource metrics.
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    metric_relabel_configs:
+      # snap Docker (v29) uses the containerd image store, so cAdvisor runs off
+      # Docker's containerd and only sets `name` to the 64-hex container id.
+      # Derive a readable `cname` from the image reference instead.
+      - source_labels: [image]
+        regex: '.*/([^/:]+):.*'
+        target_label: cname
+        replacement: '${1}'
+
+  # Host machine metrics.
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # PostgreSQL internal metrics.
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # Django application metrics (django-prometheus exposes /metrics).
+  - job_name: django
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8000"]

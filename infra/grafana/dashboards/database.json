@@ -1,0 +1,158 @@
+{
+  "uid": "finsight-database",
+  "title": "FinSight — PostgreSQL",
+  "tags": ["finsight", "postgres"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "DB reachable",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [{ "refId": "A", "expr": "pg_up" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Active connections",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "pg_stat_database_numbackends{datname=\"finsight\"}" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "max_connections",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "targets": [{ "refId": "A", "expr": "pg_settings_max_connections" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Commits/s",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(pg_stat_database_xact_commit{datname=\"finsight\"}[1m])" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Reads/s (tuples returned / fetched)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(pg_stat_database_tup_returned{datname=\"finsight\"}[1m])", "legendFormat": "returned" },
+        { "refId": "B", "expr": "rate(pg_stat_database_tup_fetched{datname=\"finsight\"}[1m])", "legendFormat": "fetched" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Writes/s (insert / update / delete)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(pg_stat_database_tup_inserted{datname=\"finsight\"}[1m])", "legendFormat": "insert" },
+        { "refId": "B", "expr": "rate(pg_stat_database_tup_updated{datname=\"finsight\"}[1m])", "legendFormat": "update" },
+        { "refId": "C", "expr": "rate(pg_stat_database_tup_deleted{datname=\"finsight\"}[1m])", "legendFormat": "delete" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Transactions/s (commit vs rollback)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(pg_stat_database_xact_commit{datname=\"finsight\"}[1m])", "legendFormat": "commit" },
+        { "refId": "B", "expr": "rate(pg_stat_database_xact_rollback{datname=\"finsight\"}[1m])", "legendFormat": "rollback" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Buffer cache hit ratio",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(pg_stat_database_blks_hit{datname=\"finsight\"}[5m]) / clamp_min(rate(pg_stat_database_blks_hit{datname=\"finsight\"}[5m]) + rate(pg_stat_database_blks_read{datname=\"finsight\"}[5m]), 1)",
+          "legendFormat": "hit ratio"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Connections vs max_connections",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "fieldConfig": { "defaults": { "unit": "none", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "pg_stat_database_numbackends{datname=\"finsight\"}", "legendFormat": "active" },
+        { "refId": "B", "expr": "pg_settings_max_connections", "legendFormat": "max" }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Deadlocks/s & conflicts/s",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(pg_stat_database_deadlocks{datname=\"finsight\"}[5m])", "legendFormat": "deadlocks" },
+        { "refId": "B", "expr": "rate(pg_stat_database_conflicts{datname=\"finsight\"}[5m])", "legendFormat": "conflicts" }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "DB container CPU (cores)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "none", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(container_cpu_usage_seconds_total{cname=\"postgres\"}[1m])", "legendFormat": "postgres" }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "DB container memory vs limit",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "container_memory_working_set_bytes{cname=\"postgres\"}", "legendFormat": "used" },
+        { "refId": "B", "expr": "container_spec_memory_limit_bytes{cname=\"postgres\"} > 0", "legendFormat": "limit" }
+      ]
+    }
+  ]
+}
