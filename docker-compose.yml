@@ -1,5 +1,6 @@
 include:
   - infra/docker-compose.observability.yml
+  - load/docker-compose.load.yml
 
 services:
   db:
