@@ -17,14 +17,28 @@ root compose file.
 
 Dashboards provisioned into Grafana:
 
-- **FinSight — Containers & App** (`containers.json`) — per-container CPU/memory
-  vs limit, Django request rate and latency.
+- **FinSight — Containers & App** (`containers.json`) — per-container CPU vs
+  limit, **CPU throttling**, memory vs limit, Django request rate by status,
+  and **per-endpoint API latency (p95 / p50) and request rate**.
 - **FinSight — PostgreSQL** (`database.json`) — reads/s, writes/s, transactions,
   cache hit ratio, connections vs `max_connections`, deadlocks, plus the DB
   container's CPU and memory.
+- **FinSight — API Runtime (Python)** (`api-runtime.json`) — Django worker RSS
+  vs virtual memory, process CPU, GC collections / reclaimed objects / pending
+  allocations per generation, CPython allocator blocks, open FDs, and (opt-in)
+  tracemalloc.
 
 The Django API exposes its own metrics at `/metrics` via `django-prometheus`
-(request counts, latency histograms, DB query stats).
+(request counts, latency histograms, DB query stats). `prometheus_client` adds
+`process_*` and `python_gc_*`; the local `observability` app adds
+`python_allocated_blocks`, `python_gc_tracked_objects`, `python_gc_pending_objects`
+and `python_tracemalloc_bytes`.
+
+CPython has no fixed heap or stack size to report the way a JVM does — process
+RSS is the real memory footprint, and the allocator/GC series are the
+Python-level internals. Set `PYTHONTRACEMALLOC=1` on the `api` service to also
+get `python_tracemalloc_bytes` (it roughly doubles memory use, so it's off by
+default).
 
 ```
 prometheus.yml ── scrapes ──▶ cadvisor, node-exporter, api:8000/metrics
