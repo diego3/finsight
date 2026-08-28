@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "django_filters",
     "django_prometheus",
     # Local
+    "observability",
     "clients",
 ]
 

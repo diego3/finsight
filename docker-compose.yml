@@ -42,6 +42,9 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
       DATABASE_URL: ${DATABASE_URL}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      # Set to 1 (or a frame count) to populate python_tracemalloc_bytes.
+      # Off by default: tracemalloc roughly doubles memory use.
+      PYTHONTRACEMALLOC: ${PYTHONTRACEMALLOC:-0}
     volumes:
       - ./api:/app
     ports:
