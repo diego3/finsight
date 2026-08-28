@@ -1,3 +1,6 @@
+include:
+  - infra/docker-compose.observability.yml
+
 services:
   db:
     image: postgres:16
