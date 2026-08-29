@@ -4,85 +4,81 @@
   "tags": ["finsight", "python"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
   "time": { "from": "now-30m", "to": "now" },
   "panels": [
     {
       "id": 1,
       "type": "stat",
-      "title": "Process RSS",
-      "description": "Resident memory of the Django worker. CPython has no fixed heap/stack size to report; this process RSS is the real memory footprint.",
+      "title": "Workers",
+      "description": "Live Python processes exposing metrics. 1 under runserver; GUNICORN_WORKERS under gunicorn (each series carries a pid label).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "targets": [{ "refId": "A", "expr": "process_resident_memory_bytes{job=\"django\"}" }]
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{ "refId": "A", "expr": "count(process_resident_memory_bytes{job=\"django\"})" }]
     },
     {
       "id": 2,
       "type": "stat",
-      "title": "Allocator blocks",
+      "title": "Total RSS",
+      "description": "Sum of resident memory across all workers. CPython has no fixed heap/stack to report — RSS is the real footprint.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "targets": [{ "refId": "A", "expr": "python_allocated_blocks{job=\"django\"}" }]
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "refId": "A", "expr": "sum(process_resident_memory_bytes{job=\"django\"})" }]
     },
     {
       "id": 3,
       "type": "stat",
-      "title": "GC-tracked objects",
+      "title": "GC-tracked objects (all workers)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "targets": [{ "refId": "A", "expr": "python_gc_tracked_objects{job=\"django\"}" }]
+      "targets": [{ "refId": "A", "expr": "sum(python_gc_tracked_objects{job=\"django\"})" }]
     },
     {
       "id": 4,
       "type": "stat",
-      "title": "Open file descriptors",
+      "title": "Allocator blocks (all workers)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "targets": [
-        { "refId": "A", "expr": "process_open_fds{job=\"django\"}", "legendFormat": "open" },
-        { "refId": "B", "expr": "process_max_fds{job=\"django\"}", "legendFormat": "max" }
-      ]
+      "targets": [{ "refId": "A", "expr": "sum(python_allocated_blocks{job=\"django\"})" }]
     },
     {
       "id": 5,
       "type": "timeseries",
-      "title": "Process memory (RSS vs virtual)",
-      "description": "RSS is real resident memory. Virtual is address space reserved (includes the Python VM, shared libs, mmaps) and is normally much larger — not a leak signal on its own.",
+      "title": "Resident memory per worker",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 }, "overrides": [] },
       "targets": [
-        { "refId": "A", "expr": "process_resident_memory_bytes{job=\"django\"}", "legendFormat": "RSS" },
-        { "refId": "B", "expr": "process_virtual_memory_bytes{job=\"django\"}", "legendFormat": "virtual" }
+        { "refId": "A", "expr": "process_resident_memory_bytes{job=\"django\"}", "legendFormat": "pid {{pid}}" }
       ]
     },
     {
       "id": 6,
       "type": "timeseries",
-      "title": "Process CPU (cores)",
-      "description": "CPU consumed by the Python process itself (rate of process_cpu_seconds_total). Complements the cgroup CPU on the Containers dashboard.",
+      "title": "CPU per worker (cores)",
+      "description": "Rate of process_cpu_seconds_total per worker. Complements the cgroup CPU on the Containers dashboard.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "fieldConfig": { "defaults": { "unit": "none", "min": 0 }, "overrides": [] },
       "targets": [
-        { "refId": "A", "expr": "rate(process_cpu_seconds_total{job=\"django\"}[1m])", "legendFormat": "cpu" }
+        { "refId": "A", "expr": "rate(process_cpu_seconds_total{job=\"django\"}[1m])", "legendFormat": "pid {{pid}}" }
       ]
     },
     {
       "id": 7,
       "type": "timeseries",
       "title": "GC collections/s by generation",
-      "description": "How often each generation is collected (rate of python_gc_collections_total). Gen 0 runs most; frequent gen 2 runs mean lots of long-lived objects churning.",
+      "description": "Summed across workers. Gen 0 runs most; frequent gen 2 runs mean lots of long-lived objects churning.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
       "targets": [
-        { "refId": "A", "expr": "rate(python_gc_collections_total{job=\"django\"}[1m])", "legendFormat": "gen {{generation}}" }
+        { "refId": "A", "expr": "sum by (generation) (rate(python_gc_collections_total{job=\"django\"}[1m]))", "legendFormat": "gen {{generation}}" }
       ]
     },
     {
@@ -93,32 +89,35 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
       "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
       "targets": [
-        { "refId": "A", "expr": "rate(python_gc_objects_collected_total{job=\"django\"}[1m])", "legendFormat": "gen {{generation}}" },
-        { "refId": "B", "expr": "rate(python_gc_objects_uncollectable_total{job=\"django\"}[5m])", "legendFormat": "uncollectable gen {{generation}}" }
+        { "refId": "A", "expr": "sum by (generation) (rate(python_gc_objects_collected_total{job=\"django\"}[1m]))", "legendFormat": "gen {{generation}}" },
+        { "refId": "B", "expr": "sum by (generation) (rate(python_gc_objects_uncollectable_total{job=\"django\"}[5m]))", "legendFormat": "uncollectable gen {{generation}}" }
       ]
     },
     {
       "id": 9,
       "type": "timeseries",
-      "title": "GC pending allocations by generation",
+      "title": "GC pending allocations by generation (avg worker)",
       "description": "gc.get_count(): allocations minus deallocations since each generation was last collected. Gen 0 sawtooths up to its threshold (~700) then resets.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
       "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
       "targets": [
-        { "refId": "A", "expr": "python_gc_pending_objects{job=\"django\"}", "legendFormat": "gen {{generation}}" }
+        { "refId": "A", "expr": "avg by (generation) (python_gc_pending_objects{job=\"django\"})", "legendFormat": "gen {{generation}}" }
       ]
     },
     {
       "id": 10,
       "type": "timeseries",
-      "title": "tracemalloc traced memory",
-      "description": "Python-level allocations tracked by tracemalloc. Empty unless PYTHONTRACEMALLOC is set on the api service (it roughly doubles memory use).",
+      "title": "Open file descriptors & tracemalloc",
+      "description": "FDs per worker (summed). tracemalloc series only appear when PYTHONTRACEMALLOC is set on the api service (it roughly doubles memory use).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
-      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 }, "overrides": [] },
+      "fieldConfig": { "defaults": { "min": 0 }, "overrides": [
+        { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [ { "id": "unit", "value": "bytes" } ] }
+      ] },
       "targets": [
-        { "refId": "A", "expr": "python_tracemalloc_bytes{job=\"django\"}", "legendFormat": "{{kind}}" }
+        { "refId": "A", "expr": "sum(process_open_fds{job=\"django\"})", "legendFormat": "open fds (total)" },
+        { "refId": "B", "expr": "sum by (kind) (python_tracemalloc_bytes{job=\"django\"})", "legendFormat": "tracemalloc {{kind}}" }
       ]
     }
   ]
