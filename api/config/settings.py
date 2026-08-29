@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     # Local
     "observability",
     "clients",
+    "portfolio",
 ]
 
 MIDDLEWARE = [
