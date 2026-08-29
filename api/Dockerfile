@@ -14,6 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN python manage.py collectstatic --noinput
+
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Dev overrides this with runserver (see docker-compose.yml). Production runs
+# it as-is via docker-compose.prod.yml.
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "config.wsgi:application"]

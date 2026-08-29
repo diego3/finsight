@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 *.sqlite3
 .venv/
+api/staticfiles/
 
 # Node
 node_modules/
@@ -16,3 +17,5 @@ frontend/.vite/
 .idea/
 .vscode/
 *.log
+
+/ideas
