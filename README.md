@@ -81,6 +81,21 @@ Run backend tests:
 docker compose exec api pytest
 ```
 
+## Quality gate
+
+Every push runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml): `ruff`
+(lint + format), `mypy` on the framework-free domain core, and the full `pytest`
+suite against a real PostgreSQL service, with a coverage floor on new domain
+code. Testing strategy and the reasoning behind it: [`docs/TESTING.md`](docs/TESTING.md).
+
+```bash
+pip install -r api/requirements-dev.txt          # ruff, mypy on top of the runtime deps
+cd api && ruff check . && ruff format --check portfolio
+mypy                                             # from the repo root
+pytest                                           # needs a database; use the compose service
+pytest portfolio/                                # pure-domain tests, no database
+```
+
 Environment variables live in `.env` at the repo root (copied from
 `.env.example`; local-only dev values).
 
