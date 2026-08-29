@@ -1,38 +1,38 @@
 # benchmarks/
 
 Load-test runs comparing configurations of the API, with the raw artifacts
-kept so numbers can be checked and re-run.
+kept so numbers can be checked and re-run. The `benchmark` skill
+(`.claude/skills/benchmark/`) is the procedure for conducting one and writing it
+up.
+
+## Pieces
+
+| path | role |
+|---|---|
+| `docker-compose.bench.yml` | api + db override, fully env-driven (`API_CPUS`, `DB_CPUS`, `GUNICORN_WORKERS`, `GUNICORN_WORKER_CLASS`, `GUNICORN_APP`) |
+| `run.sh <label> [scenario]` | runs k6, writes `results/<label>/{k6.txt,summary.json,metrics.json,window.json}` |
+| `snapshot.py` | Prometheus → `metrics.json` (api + db containers, Django, Postgres, k6), scoped to the live container ids |
 
 ## Running one
 
-The target stack must already be up **with the observability profile** (the
-script reads cAdvisor / django / k6 metrics back out of Prometheus):
+The target stack must be up **with the observability profile** (the snapshot
+reads cAdvisor / Django / Postgres / k6 metrics back out of Prometheus):
 
 ```bash
-# dev target (runserver)
-docker compose --profile observability up -d
-benchmarks/run.sh dev stress
-
-# prod target (gunicorn)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile observability up -d
-benchmarks/run.sh prod stress
+export API_CPUS=4 DB_CPUS=2 GUNICORN_WORKERS=9 GUNICORN_MAX_REQUESTS=0 \
+       GUNICORN_WORKER_CLASS=sync GUNICORN_APP=config.wsgi:application
+docker compose -f docker-compose.yml -f benchmarks/docker-compose.bench.yml \
+  --profile observability up -d --force-recreate api db
+docker compose --profile observability restart cadvisor      # drop old container series
+# warm up, then:
+benchmarks/run.sh sync stress
 ```
 
-`run.sh <label> [scenario]` runs `load/scenarios/<scenario>.js`, writes
-`benchmarks/results/<label>/`:
-
-| file | what |
-|---|---|
-| `k6.txt` | k6 console output (trimmed to setup + error breakdown + summary) |
-| `summary.json` | k6 `--summary-export` (machine-readable) |
-| `prometheus.txt` | api container CPU / throttle / memory + Django p95 / rps over the run window |
-| `window.json` | run start/end epoch + k6 exit code |
-
-k6 exits `99` when a threshold is crossed — expected for `stress.js`, whose
-whole point is to blow past them.
+k6 exits `99` when a threshold is crossed — expected for `stress.js`.
 
 ## Reports
 
-- [`2026-08-29-runserver-vs-gunicorn.md`](2026-08-29-runserver-vs-gunicorn.md)
-  — `stress.js` against `runserver` vs `gunicorn` (4 sync workers), same 1 CPU /
-  512 MiB container limit.
+| report | comparison |
+|---|---|
+| [`2026-08-29-runserver-vs-gunicorn.md`](2026-08-29-runserver-vs-gunicorn.md) · [html](2026-08-29-runserver-vs-gunicorn.html) | `runserver` vs `gunicorn` (4 workers), 1 CPU / 512 MiB |
+| [`2026-08-29-sync-vs-async.html`](2026-08-29-sync-vs-async.html) | WSGI/sync vs ASGI/uvicorn workers, api 4 CPU / db 2 CPU, 9 workers |

@@ -1,0 +1,46 @@
+# Benchmark override for the api service. Everything is env-driven so one
+# override file covers every configuration under test.
+#
+#   API_CPUS               container CPU limit           (default 4)
+#   API_MEM                container memory limit        (default 1G)
+#   GUNICORN_WORKERS       worker processes              (default 9)
+#   GUNICORN_WORKER_CLASS  sync | gthread | uvicorn.workers.UvicornWorker
+#   GUNICORN_APP           config.wsgi:application | config.asgi:application
+#
+# Example — WSGI/sync:
+#   API_CPUS=4 GUNICORN_WORKERS=9 \
+#   docker compose -f docker-compose.yml -f benchmarks/docker-compose.bench.yml \
+#     --profile observability up -d --build
+#
+# Example — ASGI/async:
+#   API_CPUS=4 GUNICORN_WORKERS=9 \
+#   GUNICORN_WORKER_CLASS=uvicorn.workers.UvicornWorker GUNICORN_APP=config.asgi:application \
+#   docker compose -f docker-compose.yml -f benchmarks/docker-compose.bench.yml \
+#     --profile observability up -d
+
+services:
+  db:
+    deploy:
+      resources:
+        limits:
+          cpus: "${DB_CPUS:-2}"
+          memory: "${DB_MEM:-1G}"
+
+  api:
+    deploy:
+      resources:
+        limits:
+          cpus: "${API_CPUS:-4}"
+          memory: "${API_MEM:-1G}"
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             exec gunicorn -c gunicorn.conf.py ${GUNICORN_APP:-config.wsgi:application}"
+    environment:
+      DJANGO_DEBUG: 0
+      GUNICORN_WORKERS: "${GUNICORN_WORKERS:-9}"
+      GUNICORN_WORKER_CLASS: "${GUNICORN_WORKER_CLASS:-sync}"
+      GUNICORN_MAX_REQUESTS: 0
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus-multiproc
+    tmpfs:
+      - /tmp/prometheus-multiproc
