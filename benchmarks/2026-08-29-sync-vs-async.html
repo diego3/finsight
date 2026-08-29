@@ -1,0 +1,345 @@
+<title>sync vs async</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --bg: #f4f5f7; --surface: #fff; --surface-2: #fbfbfc;
+    --ink: #1b2027; --muted: #5a626e; --faint: #8b93a0; --line: #e2e5e9;
+    --sync: #1b6ea8; --async: #c06a43; --bad: #b0473c; --ok: #3c8659; --neutral-fill: #c7ccd3;
+    --shadow: 0 1px 2px rgba(20,26,36,.06), 0 8px 24px -12px rgba(20,26,36,.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1116; --surface: #171b21; --surface-2: #1b2029;
+      --ink: #e4e8ee; --muted: #99a2b0; --faint: #6c7581; --line: #282e37;
+      --sync: #3f92cf; --async: #c9793f; --bad: #d6685c; --ok: #5cb681; --neutral-fill: #3a424d;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1116; --surface: #171b21; --surface-2: #1b2029;
+    --ink: #e4e8ee; --muted: #99a2b0; --faint: #6c7581; --line: #282e37;
+    --sync: #3f92cf; --async: #c9793f; --bad: #d6685c; --ok: #5cb681; --neutral-fill: #3a424d;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.5);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 17px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: clamp(2rem,5vw,5rem) clamp(1.1rem,4vw,2.5rem) 6rem; }
+  .col { max-width: 660px; }
+
+  h1,h2,h3 { font-family: "Newsreader", Georgia, serif; font-weight: 500; text-wrap: balance; letter-spacing: -.01em; }
+  h1 { font-size: clamp(2.1rem,5vw,3.1rem); line-height: 1.08; margin: 0 0 .6rem; font-weight: 600; }
+  h2 { font-size: clamp(1.5rem,3vw,1.95rem); line-height: 1.15; margin: 4.5rem 0 1.4rem; }
+  p { margin: 0 0 1.15rem; }
+  a { color: var(--sync); text-underline-offset: 2px; }
+
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: .72rem; font-weight: 500;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin: 0 0 1.4rem; }
+  .verdict { font-family: "Newsreader", Georgia, serif; font-size: clamp(1.15rem,2.4vw,1.45rem);
+    line-height: 1.45; color: var(--muted); max-width: 48ch; margin: 0 0 2.4rem; }
+  .verdict strong { color: var(--ink); font-weight: 600; }
+
+  .spec { font-family: "IBM Plex Mono", monospace; font-size: .82rem; line-height: 1.9;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.2rem;
+    color: var(--muted); display: grid; grid-template-columns: max-content 1fr; gap: .1rem 1.4rem; }
+  .spec dt { color: var(--faint); }
+  .spec dd { margin: 0; color: var(--ink); }
+
+  .deltas { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px,1fr)); gap: 1px;
+    background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 2.6rem 0 1rem; }
+  .delta { background: var(--surface); padding: 1.3rem 1.4rem 1.4rem; }
+  .delta .k { font-family: "IBM Plex Mono", monospace; font-size: .7rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: .7rem; }
+  .delta .v { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 1.05rem;
+    display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .delta .from { color: var(--sync); } .delta .to { color: var(--async); } .delta .arrow { color: var(--faint); }
+  .delta .note { font-family: "IBM Plex Sans", sans-serif; font-size: .82rem; color: var(--muted); margin-top: .55rem; line-height: 1.4; }
+
+  figure { margin: 0; }
+  figcaption { font-size: .86rem; color: var(--muted); margin-top: .8rem; max-width: 58ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 1.5rem 1.5rem 1.3rem; box-shadow: var(--shadow); }
+  .chart-title { font-family: "IBM Plex Mono", monospace; font-size: .74rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 1.1rem; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0; }
+  @media (max-width: 780px) { .charts { grid-template-columns: 1fr; } }
+
+  .legend { display: flex; gap: 1.3rem; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace;
+    font-size: .78rem; color: var(--muted); margin-top: 1rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  svg text { font-family: "IBM Plex Mono", monospace; }
+  .ax { fill: var(--faint); } .ax-label { fill: var(--muted); } .grid { stroke: var(--line); }
+  .lbl-sync { fill: var(--sync); } .lbl-async { fill: var(--async); } .lbl-bad { fill: var(--bad); }
+  .lbl-ink { fill: var(--ink); } .lbl-muted { fill: var(--muted); }
+  .fill-sync { fill: var(--sync); } .fill-async { fill: var(--async); } .fill-neutral { fill: var(--neutral-fill); }
+  .stroke-bad { stroke: var(--bad); }
+
+  .table-scroll { overflow-x: auto; margin: 1.5rem 0 .5rem; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { padding: .56rem 1rem; text-align: left; border-bottom: 1px solid var(--line); }
+  thead th { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: .7rem;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+    position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  tbody th { font-weight: 400; color: var(--ink); }
+  td.num, th.num { text-align: right; font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.sync { color: var(--sync); } td.async { color: var(--async); } td.delta { color: var(--muted); font-size: .84rem; }
+  tr.group th { font-family: "IBM Plex Mono", monospace; font-size: .68rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--faint); background: var(--surface-2); padding: .8rem 1rem; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+
+  .findings { margin-top: 1.5rem; }
+  .finding { padding: 2.1rem 0; border-top: 1px solid var(--line); }
+  .finding:first-child { border-top: none; padding-top: .5rem; }
+  .finding h3 { margin: 0 0 .7rem; font-size: 1.4rem; font-weight: 600; color: var(--ink); }
+  .finding p { max-width: 64ch; } .finding .body p:last-child { margin-bottom: 0; }
+  .pull { font-family: "Newsreader", Georgia, serif; font-weight: 500; font-size: clamp(1.2rem,2.6vw,1.55rem);
+    line-height: 1.35; color: var(--ink); margin: 1.1rem 0; padding-left: 1.1rem; border-left: 2px solid var(--async); }
+  .pull .s { color: var(--sync); } .pull .a { color: var(--async); }
+
+  code { font-family: "IBM Plex Mono", monospace; font-size: .88em; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 4px; padding: .08em .38em; }
+  ul.clean { padding-left: 1.1rem; margin: 0 0 1.15rem; }
+  ul.clean li { margin-bottom: .55rem; max-width: 64ch; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 4rem 0; }
+  footer { color: var(--muted); font-size: .9rem; }
+  footer .mono { display: block; margin-top: .5rem; color: var(--faint); font-size: .82rem;
+    font-family: "IBM Plex Mono", monospace; }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">FinSight · load benchmark · 2026-08-29</p>
+  <h1>sync vs async</h1>
+  <p class="verdict">
+    Same 4-core API container, same test, only the worker model changed. Running
+    the sync Django app under <strong>ASGI + uvicorn workers</strong> made it
+    <strong>slower and less reliable</strong>: &minus;7% throughput, 31% of
+    requests failing, and per-request latency ~50&times; worse. For a sync
+    codebase, <strong>WSGI wins</strong>.
+  </p>
+
+  <dl class="spec col">
+    <dt>scenario</dt><dd>load/scenarios/stress.js</dd>
+    <dt>shape</dt><dd>ramping-arrival-rate, 10 &rarr; 400 req/s over 4m30s, maxVUs 500</dd>
+    <dt>endpoint</dt><dd>GET /api/clients/ (read-only, sync view, sync ORM)</dd>
+    <dt>one variable</dt><dd>gunicorn worker class + app module</dd>
+    <dt>held fixed</dt><dd>9 workers · api 4 CPU / 1 GiB · db 2 CPU / 1 GiB · DEBUG=0 · 4 rows</dd>
+    <dt>sync</dt><dd>sync workers &rarr; config.wsgi:application</dd>
+    <dt>async</dt><dd>uvicorn.workers.UvicornWorker &rarr; config.asgi:application</dd>
+  </dl>
+
+  <div class="deltas">
+    <div class="delta">
+      <div class="k">Throughput</div>
+      <div class="v"><span class="from">121</span><span class="arrow">&rarr;</span><span class="to">112</span> req/s</div>
+      <div class="note">&minus;7%, and now with errors</div>
+    </div>
+    <div class="delta">
+      <div class="k">Failed requests</div>
+      <div class="v"><span class="from">0.0%</span><span class="arrow">&rarr;</span><span class="to">30.6%</span></div>
+      <div class="note">10,254 HTTP 500s &mdash; Postgres refused connections</div>
+    </div>
+    <div class="delta">
+      <div class="k">Django p95, per request</div>
+      <div class="v"><span class="from">76 ms</span><span class="arrow">&rarr;</span><span class="to">3.76 s</span></div>
+      <div class="note">~50&times; slower server-side</div>
+    </div>
+    <div class="delta">
+      <div class="k">Postgres connections</div>
+      <div class="v"><span class="from">8</span><span class="arrow">&rarr;</span><span class="to">100</span></div>
+      <div class="note">hit <code>max_connections</code> (100)</div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <figure class="card">
+      <p class="chart-title">Throughput &amp; outcome</p>
+      <svg viewBox="0 0 440 176" width="100%" role="img" aria-label="sync: 121 req/s, all completed. async: 112 req/s, 69% completed and 31% failed.">
+        <g class="grid" stroke-width="1">
+          <line x1="86" y1="14" x2="86" y2="120"/>
+          <line x1="185.4" y1="14" x2="185.4" y2="120"/>
+          <line x1="284.9" y1="14" x2="284.9" y2="120"/>
+          <line x1="384.3" y1="14" x2="384.3" y2="120"/>
+        </g>
+        <g class="ax" font-size="9" text-anchor="middle">
+          <text x="86" y="134">0</text><text x="185.4" y="134">50</text>
+          <text x="284.9" y="134">100</text><text x="384.3" y="134">150</text>
+        </g>
+        <text x="235" y="151" class="ax-label" font-size="9" text-anchor="middle">requests / second served</text>
+        <g font-size="10" text-anchor="end" class="lbl-muted">
+          <text x="78" y="42">sync</text><text x="78" y="88">async</text>
+        </g>
+        <!-- scale: 1.989 px per req/s -->
+        <rect x="86" y="30" width="241" height="20" rx="4" class="fill-sync"/>
+        <text x="333" y="44" font-size="10.5" class="lbl-sync" font-weight="600">121 &nbsp;0 failed</text>
+
+        <!-- async: 112 total; 69.4% ok, 30.6% failed -->
+        <rect x="86" y="76" width="155" height="20" rx="4" class="fill-async"/>
+        <rect x="243" y="76" width="68.8" height="20" rx="4" fill="url(#hatch)"/>
+        <text x="86" y="112" font-size="10" class="lbl-async">77 completed</text>
+        <text x="318" y="90" font-size="10.5" class="lbl-bad" font-weight="600">35 failed</text>
+        <defs>
+          <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <rect width="7" height="7" style="fill:var(--bad)"/>
+            <line x1="0" y1="0" x2="0" y2="7" style="stroke:var(--surface)" stroke-width="2.5"/>
+          </pattern>
+        </defs>
+      </svg>
+      <figcaption>async served fewer requests overall and a third of them were HTTP 500s. sync answered every request (slowly, under an open-model queue).</figcaption>
+    </figure>
+
+    <figure class="card">
+      <p class="chart-title">Peak Postgres connections</p>
+      <svg viewBox="0 0 440 176" width="100%" role="img" aria-label="sync peaked at 8 Postgres connections, async at 100 — the max_connections limit.">
+        <g class="grid" stroke-width="1">
+          <line x1="86" y1="14" x2="86" y2="120"/>
+          <line x1="173.5" y1="14" x2="173.5" y2="120"/>
+          <line x1="261" y1="14" x2="261" y2="120"/>
+          <line x1="348.5" y1="14" x2="348.5" y2="120"/>
+          <line x1="436" y1="14" x2="436" y2="120"/>
+        </g>
+        <g class="ax" font-size="9" text-anchor="middle">
+          <text x="86" y="134">0</text><text x="173.5" y="134">25</text><text x="261" y="134">50</text>
+          <text x="348.5" y="134">75</text><text x="433" y="134" text-anchor="end">100</text>
+        </g>
+        <text x="235" y="151" class="ax-label" font-size="9" text-anchor="middle">server connections (pg_stat_database_numbackends)</text>
+        <g font-size="10" text-anchor="end" class="lbl-muted">
+          <text x="78" y="42">sync</text><text x="78" y="88">async</text>
+        </g>
+        <!-- scale: 3.5 px per connection -->
+        <rect x="86" y="30" width="28" height="20" rx="4" class="fill-sync"/>
+        <text x="120" y="44" font-size="10.5" class="lbl-sync" font-weight="600">8</text>
+        <rect x="86" y="76" width="350" height="20" rx="4" class="fill-async"/>
+        <text x="430" y="90" font-size="10.5" font-weight="600" style="fill:var(--surface)" text-anchor="end">100</text>
+        <line x1="436" y1="20" x2="436" y2="106" class="stroke-bad" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <text x="431" y="18" font-size="9" class="lbl-bad" text-anchor="end">max_connections</text>
+      </svg>
+      <figcaption>gunicorn caps concurrent DB connections at the worker count. uvicorn workers run many requests at once, and with <code>CONN_MAX_AGE=0</code> each takes its own connection &mdash; straight into the ceiling.</figcaption>
+    </figure>
+  </div>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--sync)"></span> sync (WSGI)</span>
+    <span><span class="swatch" style="background:var(--async)"></span> async (ASGI)</span>
+    <span><span class="swatch" style="background:var(--bad)"></span> failed</span>
+  </div>
+
+  <h2>Every number</h2>
+  <div class="table-scroll"><table>
+    <thead><tr>
+      <th scope="col">Metric</th><th scope="col" class="num">sync (WSGI)</th>
+      <th scope="col" class="num">async (ASGI)</th><th scope="col" class="num">&Delta;</th>
+    </tr></thead>
+    <tbody>
+      <tr class="group"><th colspan="4">Client-side &mdash; k6</th></tr>
+      <tr><th scope="row">Requests completed</th><td class="num sync">32,733</td><td class="num async">30,327</td><td class="num delta">0.93&times;</td></tr>
+      <tr><th scope="row">Throughput</th><td class="num sync">121.2 req/s</td><td class="num async">112.3 req/s</td><td class="num delta">0.93&times;</td></tr>
+      <tr><th scope="row">Failed requests</th><td class="num sync">0.0%</td><td class="num async">30.6%</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">Checks passed</th><td class="num sync">100%</td><td class="num async">69.4%</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">HTTP 500s (server count)</th><td class="num sync">0</td><td class="num async">10,254</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">Dropped iterations</th><td class="num sync">6,566</td><td class="num async">8,972</td><td class="num delta">1.4&times;</td></tr>
+      <tr><th scope="row">http_req_duration p50</th><td class="num sync">19.6 ms</td><td class="num async">26.8 ms</td><td class="num delta">1.4&times;</td></tr>
+      <tr><th scope="row">http_req_duration p90</th><td class="num sync">2.49 s</td><td class="num async">4.10 s</td><td class="num delta">1.6&times;</td></tr>
+      <tr><th scope="row">http_req_duration p95</th><td class="num sync">2.56 s</td><td class="num async">5.26 s</td><td class="num delta">2.1&times;</td></tr>
+      <tr><th scope="row">http_req_duration max</th><td class="num sync">2.69 s</td><td class="num async">8.70 s</td><td class="num delta">3.2&times;</td></tr>
+      <tr><th scope="row">p95, successful requests only</th><td class="num sync">2.56 s</td><td class="num async">4.01 s</td><td class="num delta">1.6&times;</td></tr>
+      <tr><th scope="row">http_req_connecting p95</th><td class="num sync">362 &micro;s</td><td class="num async">0 s</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">http_req_waiting p95</th><td class="num sync">2.56 s</td><td class="num async">5.26 s</td><td class="num delta">2.1&times;</td></tr>
+      <tr><th scope="row">vus_max</th><td class="num sync">500</td><td class="num async">500</td><td class="num delta">&mdash;</td></tr>
+
+      <tr class="group"><th colspan="4">Server-side &mdash; Django</th></tr>
+      <tr><th scope="row">Latency p50, peak</th><td class="num sync">27 ms</td><td class="num async">0.70 s</td><td class="num delta">~26&times;</td></tr>
+      <tr><th scope="row">Latency p95, peak</th><td class="num sync">76 ms</td><td class="num async">3.76 s</td><td class="num delta">~49&times;</td></tr>
+      <tr><th scope="row">Latency p99, peak</th><td class="num sync">95 ms</td><td class="num async">4.84 s</td><td class="num delta">~51&times;</td></tr>
+      <tr><th scope="row">Throughput, peak</th><td class="num sync">220 req/s</td><td class="num async">188 req/s</td><td class="num delta">0.85&times;</td></tr>
+      <tr><th scope="row">Workers</th><td class="num sync">9</td><td class="num async">9</td><td class="num delta">&mdash;</td></tr>
+
+      <tr class="group"><th colspan="4">API container &mdash; cAdvisor (limit 4 cores)</th></tr>
+      <tr><th scope="row">CPU, avg / max cores</th><td class="num sync">1.39 / 3.42</td><td class="num async">1.69 / 4.00</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">CPU throttling, avg / max</th><td class="num sync">0.2% / 0.9%</td><td class="num async">18.9% / 100%</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">Memory, peak</th><td class="num sync">492 MiB</td><td class="num async">845 MiB</td><td class="num delta">1.7&times;</td></tr>
+
+      <tr class="group"><th colspan="4">DB container &mdash; cAdvisor (limit 2 cores)</th></tr>
+      <tr><th scope="row">CPU, avg / max cores</th><td class="num sync">0.77 / 2.00</td><td class="num async">0.61 / 1.24</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">Memory, peak</th><td class="num sync">42 MiB</td><td class="num async">197 MiB</td><td class="num delta">4.7&times;</td></tr>
+
+      <tr class="group"><th colspan="4">Postgres &mdash; postgres-exporter</th></tr>
+      <tr><th scope="row">Rows returned/s, peak</th><td class="num sync">45,946</td><td class="num async">36,870</td><td class="num delta">0.8&times;</td></tr>
+      <tr><th scope="row">Transactions/s, peak</th><td class="num sync">844</td><td class="num async">677</td><td class="num delta">0.8&times;</td></tr>
+      <tr><th scope="row">Connections, peak</th><td class="num sync">8</td><td class="num async">100</td><td class="num delta">12.5&times;</td></tr>
+      <tr><th scope="row">max_connections</th><td class="num sync">100</td><td class="num async">100</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">Cache hit ratio, min</th><td class="num sync">0.9998</td><td class="num async">1.0000</td><td class="num delta">&mdash;</td></tr>
+      <tr><th scope="row">Deadlocks</th><td class="num sync">0</td><td class="num async">0</td><td class="num delta">&mdash;</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:.86rem;color:var(--muted)">Both runs crossed <code>stress.js</code>'s thresholds (k6 exit 99) — expected. Runs ~50 s apart, 16-core host. The API container's throughput peak (Django, 220 vs 188 req/s) is higher than k6's sustained rate because it counts the brief moments before the accept queue built up.</p>
+
+  <h2>Reading it</h2>
+  <div class="findings">
+
+    <div class="finding">
+      <h3>Async lost on every axis that matters</h3>
+      <div class="body">
+        <p>Throughput dropped 7%, a third of requests returned HTTP 500, and server-side p95 went from 76&nbsp;ms to 3.76&nbsp;s. There is no column in the table where ASGI came out ahead on this workload &mdash; only <code>http_req_connecting</code>, which was already a non-issue.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>A sync view under ASGI still runs in a thread pool</h3>
+      <div class="body">
+        <p>Every FinSight view is <code>def</code>, not <code>async def</code>, and the ORM calls are sync. Under ASGI, Django wraps each one in <code>sync_to_async</code> and runs it in a thread executor. So a request now pays for the asyncio event loop, the loop&rarr;thread handoff, and <code>asgiref</code>'s context machinery <em>on top of</em> the identical sync work.</p>
+        <p>It shows in the CPU: async pinned the container at 4.0 / 4 cores with up to 100% throttling; sync did the same work coasting at 1.4 cores with no throttling.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>Async exhausted the Postgres connection pool</h3>
+      <div class="body">
+        <p class="pull">Peak backends: <span class="s">8</span> under sync, <span class="a">100</span> under async &mdash; and <code>max_connections</code> is 100.</p>
+        <p>gunicorn's process model is a natural limiter: 9 sync workers handle at most 9 requests at once, so at most ~9 DB connections. uvicorn workers each run many requests concurrently through their thread pool, and with <code>CONN_MAX_AGE=0</code> every in-flight request opens its own connection. It walked straight into the ceiling, and Postgres answered the overflow with <code>FATAL: sorry, too many clients already</code> &mdash; the 10,254 HTTP 500s.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>The database is the real ceiling for both</h3>
+      <div class="body">
+        <p>sync bottlenecks on DB <em>CPU</em>: 844 transactions/s is mostly connection churn (a connect + auth + the query + disconnect per request), and the db container sat pinned at 2 / 2 cores. async bottlenecks on DB <em>connection count</em>. Same root cause &mdash; <code>CONN_MAX_AGE=0</code> and no connection pooler.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>Async did make TCP accept instant</h3>
+      <div class="body">
+        <p><code>http_req_connecting</code> p95 went from 362&nbsp;&micro;s to 0. uvicorn's asyncio accept loop never blocks. It is the one thing ASGI is unambiguously good at here, and at this scale it changes nothing &mdash; the latency is all accept-queue wait and thread-pool contention behind it.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Next</h2>
+  <ul class="clean">
+    <li>Add <code>CONN_MAX_AGE</code> (or pgbouncer) and re-run <em>both</em> &mdash; the interesting comparison is sync vs async <em>with</em> pooling, where the connection ceiling no longer decides it.</li>
+    <li>Raise <code>DB_CPUS</code> to 4 and re-run sync: is it still DB-CPU-bound, or does the app tier become the limit?</li>
+    <li>If staying sync (the call for this codebase): raise <code>GUNICORN_WORKERS</code> and tune <code>--backlog</code>, re-measure.</li>
+    <li>Async is only worth revisiting once views are genuinely <code>async def</code> with an async ORM or async external calls &mdash; not applicable today.</li>
+  </ul>
+
+  <hr>
+  <footer>
+    <p>Run with <code>benchmarks/run.sh sync stress</code> and <code>benchmarks/run.sh async stress</code>
+    via <code>benchmarks/docker-compose.bench.yml</code> (<code>API_CPUS=4 DB_CPUS=2 GUNICORN_WORKERS=9</code>).
+    Raw k6 output and Prometheus snapshots in <code>benchmarks/results/{sync,async}/</code>.</p>
+    <span class="mono">FinSight · feat/prototype-vertical-slice</span>
+  </footer>
+
+</div>
