@@ -2,8 +2,14 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 *.sqlite3
 .venv/
+api/staticfiles/
 
 # Node
 node_modules/
@@ -16,3 +22,5 @@ frontend/.vite/
 .idea/
 .vscode/
 *.log
+
+/ideas

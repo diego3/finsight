@@ -23,16 +23,25 @@ Dashboards provisioned into Grafana:
 - **FinSight — PostgreSQL** (`database.json`) — reads/s, writes/s, transactions,
   cache hit ratio, connections vs `max_connections`, deadlocks, plus the DB
   container's CPU and memory.
-- **FinSight — API Runtime (Python)** (`api-runtime.json`) — Django worker RSS
-  vs virtual memory, process CPU, GC collections / reclaimed objects / pending
-  allocations per generation, CPython allocator blocks, open FDs, and (opt-in)
-  tracemalloc.
+- **FinSight — API Runtime (Python)** (`api-runtime.json`) — worker count, total
+  and per-worker RSS, per-worker CPU, GC collections / reclaimed objects /
+  pending allocations per generation, CPython allocator blocks, open FDs, and
+  (opt-in) tracemalloc. Works with 1 process (runserver) or N (gunicorn).
 
 The Django API exposes its own metrics at `/metrics` via `django-prometheus`
 (request counts, latency histograms, DB query stats). `prometheus_client` adds
 `process_*` and `python_gc_*`; the local `observability` app adds
 `python_allocated_blocks`, `python_gc_tracked_objects`, `python_gc_pending_objects`
 and `python_tracemalloc_bytes`.
+
+**Under gunicorn** (`docker-compose.prod.yml`), `/metrics` is served by
+`prometheus_client`'s multiprocess collector, which only reads the per-worker
+`.db` files and drops live collectors. The `observability` app compensates: when
+`PROMETHEUS_MULTIPROC_DIR` is set it unregisters the built-in `process_*` /
+`python_gc_*` collectors and re-publishes them (plus its own series) as
+`multiprocess_mode="liveall"` gauges that a per-worker thread refreshes — so
+every runtime series is preserved and gains a `pid` label. `django_*` counters
+and histograms are summed across workers by django-prometheus.
 
 CPython has no fixed heap or stack size to report the way a JVM does — process
 RSS is the real memory footprint, and the allocator/GC series are the

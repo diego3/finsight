@@ -1,0 +1,424 @@
+<title>runserver vs gunicorn</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #fbfbfc;
+    --ink: #1b2027;
+    --muted: #5a626e;
+    --faint: #8b93a0;
+    --line: #e2e5e9;
+    --runserver: #c06a43;
+    --gunicorn: #1b6ea8;
+    --bad: #b0473c;
+    --ok: #3c8659;
+    --neutral-fill: #c7ccd3;
+    --shadow: 0 1px 2px rgba(20, 26, 36, .06), 0 8px 24px -12px rgba(20, 26, 36, .12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1116;
+      --surface: #171b21;
+      --surface-2: #1b2029;
+      --ink: #e4e8ee;
+      --muted: #99a2b0;
+      --faint: #6c7581;
+      --line: #282e37;
+      --runserver: #c9793f;
+      --gunicorn: #3f92cf;
+      --bad: #d6685c;
+      --ok: #5cb681;
+      --neutral-fill: #3a424d;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -14px rgba(0, 0, 0, .5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1116;
+    --surface: #171b21;
+    --surface-2: #1b2029;
+    --ink: #e4e8ee;
+    --muted: #99a2b0;
+    --faint: #6c7581;
+    --line: #282e37;
+    --runserver: #c9793f;
+    --gunicorn: #3f92cf;
+    --bad: #d6685c;
+    --ok: #5cb681;
+    --neutral-fill: #3a424d;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -14px rgba(0, 0, 0, .5);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: clamp(2rem, 5vw, 5rem) clamp(1.1rem, 4vw, 2.5rem) 6rem; }
+  .col { max-width: 660px; }
+
+  h1, h2, h3 { font-family: "Newsreader", Georgia, serif; font-weight: 500; text-wrap: balance; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); line-height: 1.08; margin: 0 0 .6rem; font-weight: 600; }
+  h2 { font-size: clamp(1.5rem, 3vw, 1.95rem); line-height: 1.15; margin: 4.5rem 0 1.4rem; }
+  h3 { font-size: 1.16rem; margin: 2.2rem 0 .5rem; color: var(--ink); }
+  p { margin: 0 0 1.15rem; }
+  a { color: var(--gunicorn); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem; font-weight: 500;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 1.4rem;
+  }
+  .verdict {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+    line-height: 1.45; color: var(--muted);
+    max-width: 44ch; margin: 0 0 2.4rem;
+  }
+  .verdict strong { color: var(--ink); font-weight: 600; }
+
+  .spec {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .82rem; line-height: 1.9;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 1rem 1.2rem;
+    color: var(--muted);
+    display: grid; grid-template-columns: max-content 1fr; gap: .1rem 1.4rem;
+  }
+  .spec dt { color: var(--faint); }
+  .spec dd { margin: 0; color: var(--ink); }
+
+  /* hero delta cards */
+  .deltas {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1px; background: var(--line);
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    margin: 2.6rem 0 1rem;
+  }
+  .delta { background: var(--surface); padding: 1.3rem 1.4rem 1.4rem; }
+  .delta .k { font-family: "IBM Plex Mono", monospace; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: .7rem; }
+  .delta .v {
+    font-family: "IBM Plex Mono", monospace; font-weight: 500;
+    font-size: 1.05rem; display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .delta .from { color: var(--runserver); }
+  .delta .to { color: var(--gunicorn); }
+  .delta .arrow { color: var(--faint); }
+  .delta .note { font-family: "IBM Plex Sans", sans-serif; font-size: .82rem; color: var(--muted); margin-top: .55rem; line-height: 1.4; }
+
+  figure { margin: 2rem 0; }
+  figcaption { font-size: .86rem; color: var(--muted); margin-top: .8rem; max-width: 58ch; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 1.5rem 1.5rem 1.3rem; box-shadow: var(--shadow);
+  }
+  .chart-title { font-family: "IBM Plex Mono", monospace; font-size: .74rem; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin: 0 0 1.1rem; }
+
+  .legend { display: flex; gap: 1.3rem; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace; font-size: .78rem; color: var(--muted); margin-top: 1rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  svg text { font-family: "IBM Plex Mono", monospace; }
+  .ax { fill: var(--faint); }
+  .ax-label { fill: var(--muted); }
+  .grid { stroke: var(--line); }
+  .lbl-rs { fill: var(--runserver); }
+  .lbl-gu { fill: var(--gunicorn); }
+  .lbl-bad { fill: var(--bad); }
+  .lbl-ink { fill: var(--ink); }
+  .lbl-muted { fill: var(--muted); }
+  .fill-rs { fill: var(--runserver); }
+  .fill-gu { fill: var(--gunicorn); }
+  .fill-neutral { fill: var(--neutral-fill); }
+
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0; }
+  @media (max-width: 780px) { .charts { grid-template-columns: 1fr; } }
+
+  /* comparison table */
+  .table-scroll { overflow-x: auto; margin: 1.5rem 0 .5rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  caption { text-align: left; padding: 0; }
+  th, td { padding: .56rem 1rem; text-align: left; border-bottom: 1px solid var(--line); }
+  thead th {
+    font-family: "IBM Plex Mono", monospace; font-weight: 500;
+    font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+    position: sticky; top: 0; background: var(--surface); z-index: 1;
+  }
+  tbody th { font-weight: 400; color: var(--ink); }
+  td.num, th.num { text-align: right; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.rs { color: var(--runserver); }
+  td.gu { color: var(--gunicorn); }
+  td.delta { color: var(--muted); font-size: .84rem; }
+  tr.group th {
+    font-family: "IBM Plex Mono", monospace; font-size: .68rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--faint); background: var(--surface-2);
+    padding-top: .8rem; padding-bottom: .8rem;
+  }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+
+  /* findings */
+  .findings { margin-top: 1.5rem; }
+  .finding { padding: 2.1rem 0; border-top: 1px solid var(--line); }
+  .finding:first-child { border-top: none; padding-top: .5rem; }
+  .finding h3 { margin: 0 0 .7rem; font-size: 1.4rem; font-weight: 600; color: var(--ink); }
+  .finding .body p:last-child { margin-bottom: 0; }
+  .finding p { max-width: 64ch; }
+
+  .pull {
+    font-family: "Newsreader", Georgia, serif; font-weight: 500;
+    font-size: clamp(1.2rem, 2.6vw, 1.55rem); line-height: 1.35;
+    color: var(--ink); margin: 1.1rem 0; padding-left: 1.1rem;
+    border-left: 2px solid var(--gunicorn);
+  }
+  .pull .a { color: var(--runserver); }
+  .pull .b { color: var(--gunicorn); }
+  code, .mono { font-family: "IBM Plex Mono", monospace; font-size: .88em; }
+  code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: .08em .38em; }
+
+  ul.clean { padding-left: 1.1rem; margin: 0 0 1.15rem; }
+  ul.clean li { margin-bottom: .55rem; max-width: 62ch; }
+
+  hr { border: none; border-top: 1px solid var(--line); margin: 4rem 0; }
+  footer { color: var(--muted); font-size: .9rem; }
+  footer .mono { display: block; margin-top: .5rem; color: var(--faint); font-size: .82rem; }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">FinSight · load benchmark · 2026-08-29</p>
+  <h1>runserver vs gunicorn</h1>
+  <p class="verdict">
+    Same one-core container, same test. Swapping Django's dev server for
+    <strong>gunicorn with 4 workers</strong> took the API from
+    <strong>collapsing under load</strong> to <strong>degrading gracefully</strong>:
+    2.7&times; the throughput, zero failed requests, and half the memory.
+  </p>
+
+  <dl class="spec col">
+    <dt>scenario</dt><dd>load/scenarios/stress.js</dd>
+    <dt>shape</dt><dd>ramping-arrival-rate, 10 &rarr; 400 req/s over 4m30s, maxVUs 500</dd>
+    <dt>endpoint</dt><dd>GET /api/clients/ (read-only, paginated)</dd>
+    <dt>one variable</dt><dd>the WSGI server &mdash; everything else identical</dd>
+    <dt>api limit</dt><dd>cpus 1.0 · memory 512 MiB (both runs)</dd>
+    <dt>runserver</dt><dd>1 process, threaded, DEBUG=1</dd>
+    <dt>gunicorn</dt><dd>4 sync workers, whitenoise, DEBUG=0</dd>
+  </dl>
+
+  <div class="deltas">
+    <div class="delta">
+      <div class="k">Throughput</div>
+      <div class="v"><span class="from">22.5</span><span class="arrow">&rarr;</span><span class="to">61.5</span> req/s</div>
+      <div class="note">2.7&times; more requests served per second</div>
+    </div>
+    <div class="delta">
+      <div class="k">Failed requests</div>
+      <div class="v"><span class="from">42.1%</span><span class="arrow">&rarr;</span><span class="to">0.0%</span></div>
+      <div class="note">1,461 client errors &rarr; none</div>
+    </div>
+    <div class="delta">
+      <div class="k">Connection setup p95</div>
+      <div class="v"><span class="from">5.11 s</span><span class="arrow">&rarr;</span><span class="to">0.45 ms</span></div>
+      <div class="note">the stalled-TCP problem, gone</div>
+    </div>
+    <div class="delta">
+      <div class="k">Peak memory</div>
+      <div class="v"><span class="from">512 MiB</span><span class="arrow">&rarr;</span><span class="to">220 MiB</span></div>
+      <div class="note">runserver sat on the container limit</div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <figure class="card" style="margin:0">
+      <p class="chart-title">Achieved throughput vs offered load</p>
+      <svg viewBox="0 0 440 188" width="100%" role="img" aria-label="Peak offered load 400 requests per second. runserver achieved 22.5. gunicorn achieved 61.5.">
+        <g class="grid" stroke-width="1">
+          <line x1="98" y1="16" x2="98" y2="150"/>
+          <line x1="182.5" y1="16" x2="182.5" y2="150"/>
+          <line x1="267" y1="16" x2="267" y2="150"/>
+          <line x1="351.5" y1="16" x2="351.5" y2="150"/>
+          <line x1="436" y1="16" x2="436" y2="150"/>
+        </g>
+        <g class="ax" font-size="9">
+          <text x="98" y="164" text-anchor="middle">0</text>
+          <text x="182.5" y="164" text-anchor="middle">100</text>
+          <text x="267" y="164" text-anchor="middle">200</text>
+          <text x="351.5" y="164" text-anchor="middle">300</text>
+          <text x="438" y="164" text-anchor="end">400</text>
+        </g>
+        <text x="267" y="181" class="ax-label" font-size="9" text-anchor="middle">requests / second</text>
+        <g font-size="10" text-anchor="end" class="lbl-muted">
+          <text x="90" y="35">offered</text>
+          <text x="90" y="76">runserver</text>
+          <text x="90" y="117">gunicorn</text>
+        </g>
+        <!-- scale: 338px == 400 req/s -->
+        <rect x="98" y="23" width="338" height="18" rx="4" class="fill-neutral"/>
+        <text x="430" y="36" font-size="10" class="lbl-ink" text-anchor="end" font-weight="500">400 &nbsp;peak</text>
+
+        <rect x="98" y="64" width="19" height="18" rx="4" class="fill-rs"/>
+        <text x="123" y="77" font-size="10.5" class="lbl-rs" font-weight="600">22.5</text>
+
+        <rect x="98" y="105" width="52" height="18" rx="4" class="fill-gu"/>
+        <text x="156" y="118" font-size="10.5" class="lbl-gu" font-weight="600">61.5</text>
+      </svg>
+      <figcaption>Neither server came close to the offered rate &mdash; the container has one core and this endpoint is CPU-bound. gunicorn still served ~2.7&times; as much.</figcaption>
+    </figure>
+
+    <figure class="card" style="margin:0">
+      <p class="chart-title">Request outcomes</p>
+      <svg viewBox="0 0 440 188" width="100%" role="img" aria-label="runserver: 57.9 percent completed, 42.1 percent failed. gunicorn: 100 percent completed.">
+        <defs>
+          <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <rect width="7" height="7" style="fill:var(--bad)"/>
+            <line x1="0" y1="0" x2="0" y2="7" style="stroke:var(--surface)" stroke-width="2.5"/>
+          </pattern>
+        </defs>
+        <g font-size="10" text-anchor="end" class="lbl-muted">
+          <text x="90" y="49">runserver</text>
+          <text x="90" y="119">gunicorn</text>
+        </g>
+        <!-- track: 336px == 100% -->
+        <rect x="98" y="34" width="194.5" height="22" rx="4" class="fill-neutral"/>
+        <rect x="294.5" y="34" width="139.5" height="22" rx="4" fill="url(#hatch)"/>
+        <text x="98" y="78" font-size="10" class="lbl-muted">57.9% completed</text>
+        <text x="434" y="78" font-size="10" class="lbl-bad" text-anchor="end" font-weight="600">42.1% failed</text>
+
+        <rect x="98" y="104" width="336" height="22" rx="4" class="fill-gu"/>
+        <text x="98" y="148" font-size="10" class="lbl-gu" font-weight="600">100% completed</text>
+      </svg>
+      <figcaption>An open-model test doesn't ease off when the server slows &mdash; runserver dropped the requests it couldn't handle; gunicorn queued and answered every one.</figcaption>
+    </figure>
+  </div>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--runserver)"></span> runserver</span>
+    <span><span class="swatch" style="background:var(--gunicorn)"></span> gunicorn</span>
+    <span><span class="swatch" style="background:var(--neutral-fill)"></span> offered / completed</span>
+    <span><span class="swatch" style="background:var(--bad)"></span> failed</span>
+  </div>
+
+  <h2>Every number</h2>
+  <div class="table-scroll">
+    <table>
+      <caption class="visually-hidden"></caption>
+      <thead>
+        <tr>
+          <th scope="col">Metric</th>
+          <th scope="col" class="num">runserver</th>
+          <th scope="col" class="num">gunicorn &times;4</th>
+          <th scope="col" class="num">&Delta;</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="group"><th colspan="4">Client-side &mdash; k6</th></tr>
+        <tr><th scope="row">Requests completed</th><td class="num rs">6,669</td><td class="num gu">16,905</td><td class="num delta">2.5&times;</td></tr>
+        <tr><th scope="row">Throughput</th><td class="num rs">22.5 req/s</td><td class="num gu">61.5 req/s</td><td class="num delta">2.7&times;</td></tr>
+        <tr><th scope="row">Failed requests</th><td class="num rs">42.1%</td><td class="num gu">0.0%</td><td class="num delta">&mdash;</td></tr>
+        <tr><th scope="row">Checks passed</th><td class="num rs">57.9%</td><td class="num gu">100%</td><td class="num delta">&mdash;</td></tr>
+        <tr><th scope="row">Dropped iterations</th><td class="num rs">32,631</td><td class="num gu">22,394</td><td class="num delta">0.7&times;</td></tr>
+        <tr><th scope="row">k6 request errors</th><td class="num rs">1,461</td><td class="num gu">0</td><td class="num delta">&mdash;</td></tr>
+        <tr><th scope="row">http_req_duration p50</th><td class="num rs">25 ms</td><td class="num gu">6.68 s</td><td class="num delta">&mdash;</td></tr>
+        <tr><th scope="row">http_req_duration p95</th><td class="num rs">60.0 s</td><td class="num gu">7.49 s</td><td class="num delta">8&times;</td></tr>
+        <tr><th scope="row">http_req_duration max</th><td class="num rs">60.0 s</td><td class="num gu">8.68 s</td><td class="num delta">7&times;</td></tr>
+        <tr><th scope="row">p95, successful requests only</th><td class="num rs">2.10 s</td><td class="num gu">7.49 s</td><td class="num delta">&mdash;</td></tr>
+        <tr><th scope="row">http_req_connecting p95</th><td class="num rs">5.11 s</td><td class="num gu">0.45 ms</td><td class="num delta">~11,000&times;</td></tr>
+        <tr><th scope="row">http_req_connecting max</th><td class="num rs">19.74 s</td><td class="num gu">8.05 ms</td><td class="num delta">~2,400&times;</td></tr>
+        <tr><th scope="row">http_req_waiting p95</th><td class="num rs">60.0 s</td><td class="num gu">7.49 s</td><td class="num delta">8&times;</td></tr>
+
+        <tr class="group"><th colspan="4">Server-side &mdash; Prometheus</th></tr>
+        <tr><th scope="row">Django latency p95, peak</th><td class="num rs">75 s</td><td class="num gu">97 ms</td><td class="num delta">~770&times;</td></tr>
+        <tr><th scope="row">Django throughput, peak</th><td class="num rs">52.6 req/s</td><td class="num gu">82.4 req/s</td><td class="num delta">1.6&times;</td></tr>
+
+        <tr class="group"><th colspan="4">Container &mdash; cAdvisor</th></tr>
+        <tr><th scope="row">CPU, avg / max</th><td class="num rs">0.75 / 1.00</td><td class="num gu">0.72 / 1.00</td><td class="num delta">&mdash;</td></tr>
+        <tr><th scope="row">CPU throttling, avg / max</th><td class="num rs">61% / 100%</td><td class="num gu">57% / 100%</td><td class="num delta">&mdash;</td></tr>
+        <tr><th scope="row">Memory, peak</th><td class="num rs">512.0 MiB</td><td class="num gu">220 MiB</td><td class="num delta">0.43&times;</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:.86rem;color:var(--muted)">runserver's 512.0 MiB is <em>the container limit</em> &mdash; it peaked at 99.99% of the cap. k6 request errors: 1,073 request timeout · 337 dial timeout · 51 connection reset.</p>
+
+  <h2>Reading it</h2>
+  <div class="findings">
+
+    <div class="finding">
+      <h3>runserver collapsed; gunicorn degraded</h3>
+      <div class="body">
+        <p>runserver settled at ~22 req/s with 42% of requests failing &mdash; timeouts, dial timeouts, connection resets. gunicorn sustained ~62 req/s with <em>zero</em> failures; every request was answered, just slowly.</p>
+        <p><code>stress.js</code> uses an open model, so a slow server doesn't get a lighter load &mdash; it gets a growing queue. runserver dropped that queue on the floor; gunicorn held it.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>The connection stall is gone</h3>
+      <div class="body">
+        <p><code>http_req_connecting</code> p95 went from 5.11&nbsp;s to 0.45&nbsp;ms (max 19.7&nbsp;s &rarr; 8&nbsp;ms). runserver has one <code>accept()</code> loop and a small listen backlog, so new TCP connections waited through the kernel's SYN-retransmit backoff &mdash; roughly 1&nbsp;s, 3&nbsp;s, 7&nbsp;s, 19&nbsp;s, the exact outliers seen.</p>
+        <p>gunicorn's 4 workers accept in parallel behind a larger backlog, so connection setup stays sub-millisecond even while the app is saturated.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>Server-side latency: 75&nbsp;s &rarr; 97&nbsp;ms</h3>
+      <div class="body">
+        <p class="pull">Under runserver, Django's <span class="a">own</span> latency histogram maxed out at 75&nbsp;s. Under gunicorn each request is served in <span class="b">~100&nbsp;ms</span>.</p>
+        <p>With runserver, requests queued <em>inside the Python process</em> &mdash; GIL plus a single accept loop. With gunicorn the multi-second <code>http_req_duration</code> is almost entirely time in the OS accept queue waiting for one of the 4 workers to free up (<code>http_req_waiting</code> &asymp; <code>http_req_duration</code>, <code>http_req_connecting</code> negligible). That's honest back-pressure, not the app choking.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>runserver sat on the memory limit</h3>
+      <div class="body">
+        <p><code>manage.py runserver</code> is threaded &mdash; roughly one thread per in-flight connection. At 500 VUs that's ~500 thread stacks plus buffers, and the working set pinned the container's 512 MiB limit (99.99% of it &mdash; one bad moment from an OOM kill).</p>
+        <p>gunicorn's 4 sync workers have a bounded footprint no matter how deep the queue: 220 MiB, flat.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>Both are CPU-bound at the one-core cap</h3>
+      <div class="body">
+        <p>CPU averaged ~0.75 cores with ~60% CFS throttling in both runs &mdash; the <code>cpus: "1.0"</code> limit is the ceiling, and the server choice doesn't move it. gunicorn's wins are the concurrency model, failure behaviour, connection handling and memory &mdash; not raw compute.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>Neither reached 400 req/s</h3>
+      <div class="body">
+        <p>20k&ndash;33k dropped iterations in both runs. <code>GET /api/clients/</code> is CPU-bound &mdash; serialization, pagination &mdash; and the container has one core. Serving 400 req/s means raising the CPU limit; adding workers alone won't help on a single core.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Next</h2>
+  <ul class="clean">
+    <li>Re-run at <code>cpus: "2"</code> / <code>"4"</code> to find where gunicorn scales.</li>
+    <li>Run the async variant (ASGI + <code>uvicorn.workers.UvicornWorker</code>, in the header of <code>docker-compose.prod.yml</code>) and compare. Hypothesis: little throughput gain &mdash; this endpoint is CPU-bound, not I/O-bound. Worth measuring rather than assuming.</li>
+    <li>Add <code>CONN_MAX_AGE</code> / pgbouncer and re-measure; watch <code>pg_stat_database_numbackends</code> during the run.</li>
+    <li>Try <code>worker_class=gthread</code> with <code>GUNICORN_THREADS</code> and a tuned <code>--backlog</code>.</li>
+  </ul>
+
+  <hr>
+  <footer>
+    <p>Run with <code>benchmarks/run.sh dev stress</code> and <code>benchmarks/run.sh prod stress</code>,
+    ~7&nbsp;min apart on the same machine. Raw k6 output and Prometheus snapshots are in
+    <code>benchmarks/results/{dev,prod}/</code>; full write-up in
+    <code>benchmarks/2026-08-29-runserver-vs-gunicorn.md</code>.</p>
+    <span class="mono">FinSight · feat/prototype-vertical-slice</span>
+  </footer>
+
+</div>

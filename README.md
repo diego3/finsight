@@ -35,6 +35,21 @@ docker compose up --build
 - API health: http://localhost:8000/api/health/
 - API metrics: http://localhost:8000/metrics
 
+The default `api` service runs `manage.py runserver` (single process, hot
+reload).
+
+### Production-style API (gunicorn) — for benchmarking
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+```
+
+Runs gunicorn with `GUNICORN_WORKERS` (default 4) sync workers, whitenoise for
+static, and multi-process Prometheus metrics (`/metrics` aggregates request
+counters across workers and adds a `pid` label to the per-worker runtime
+series). Async variant (ASGI + uvicorn workers, no code change) is documented at
+the top of `docker-compose.prod.yml`.
+
 ### With observability
 
 ```bash
@@ -64,6 +79,21 @@ Run backend tests:
 
 ```bash
 docker compose exec api pytest
+```
+
+## Quality gate
+
+Every push runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml): `ruff`
+(lint + format), `mypy` on the framework-free domain core, and the full `pytest`
+suite against a real PostgreSQL service, with a coverage floor on new domain
+code. Testing strategy and the reasoning behind it: [`docs/TESTING.md`](docs/TESTING.md).
+
+```bash
+pip install -r api/requirements-dev.txt          # ruff, mypy on top of the runtime deps
+cd api && ruff check . && ruff format --check portfolio
+mypy                                             # from the repo root
+pytest                                           # needs a database; use the compose service
+pytest portfolio/                                # pure-domain tests, no database
 ```
 
 Environment variables live in `.env` at the repo root (copied from

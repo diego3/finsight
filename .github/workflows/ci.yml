@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  backend:
+    name: backend · lint · types · tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: finsight
+          POSTGRES_USER: finsight
+          POSTGRES_PASSWORD: finsight
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U finsight -d finsight"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://finsight:finsight@localhost:5432/finsight
+      DJANGO_SECRET_KEY: ci-insecure-key
+      DJANGO_DEBUG: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: api/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r api/requirements-dev.txt
+
+      - name: Ruff lint (repo-wide)
+        run: ruff check .
+
+      - name: Ruff format (portfolio)
+        run: ruff format --check api/portfolio
+
+      - name: Mypy (typed domain core)
+        run: mypy   # reads pyproject.toml; must run from the repo root
+
+      - name: Pytest (full suite, real PostgreSQL)
+        working-directory: api
+        run: pytest --cov=portfolio --cov-report=term-missing --cov-fail-under=95

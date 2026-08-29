@@ -5,6 +5,6 @@ class ObservabilityConfig(AppConfig):
     name = "observability"
 
     def ready(self) -> None:
-        from .collectors import register_python_runtime_collector
+        from .collectors import start_runtime_metrics
 
-        register_python_runtime_collector()
+        start_runtime_metrics()

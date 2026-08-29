@@ -1,0 +1,8 @@
+window            : 277s  (1788026337..1788026614)
+api cpu  avg cores : 0.7228
+api cpu  max cores : 1.0007
+api throttle avg % : 57.4182
+api throttle max % : 100.0
+api mem  max bytes : 230838272.0
+django p95 max s   : 0.0975
+django rps max     : 82.3556
