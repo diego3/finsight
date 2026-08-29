@@ -35,6 +35,21 @@ docker compose up --build
 - API health: http://localhost:8000/api/health/
 - API metrics: http://localhost:8000/metrics
 
+The default `api` service runs `manage.py runserver` (single process, hot
+reload).
+
+### Production-style API (gunicorn) — for benchmarking
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+```
+
+Runs gunicorn with `GUNICORN_WORKERS` (default 4) sync workers, whitenoise for
+static, and multi-process Prometheus metrics (`/metrics` aggregates request
+counters across workers and adds a `pid` label to the per-worker runtime
+series). Async variant (ASGI + uvicorn workers, no code change) is documented at
+the top of `docker-compose.prod.yml`.
+
 ### With observability
 
 ```bash
