@@ -1,0 +1,38 @@
+# Tooling config for the Python side of FinSight. Not a package — the API is a
+# plain Django project — this file only carries lint/type-check settings so the
+# same rules run locally, in pre-commit, and in CI.
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["**/migrations/*"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "DJ",  # flake8-django
+    "SIM", # flake8-simplify
+    "RUF",
+]
+# Django/DRF configure behaviour through class-level list/dict attributes
+# (`fields`, `list_display`, `filterset_fields`, ...). RUF012 flags every one of
+# them; it is noise for this style of code.
+extend-ignore = ["RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+# Predates the linter: a dense one-metric-per-line block and a few bare
+# try/except/pass guards in the sampler. Left as-is deliberately for now;
+# cleaning it is tracked separately so this change stays about testing.
+"api/observability/collectors.py" = ["E501", "SIM105", "SIM112"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+# Scoped to the framework-free domain core for now. The Django layer needs
+# django-stubs before it can be type-checked cleanly; tracked for the SHOULD scope.
+files = ["api/portfolio/analytics.py"]
