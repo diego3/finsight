@@ -10,3 +10,5 @@ uvicorn[standard]~=0.32
 whitenoise~=6.8
 pytest~=8.3
 pytest-django~=4.9
+pytest-cov~=6.0
+hypothesis~=6.112

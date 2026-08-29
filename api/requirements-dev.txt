@@ -1,0 +1,5 @@
+# Local + CI tooling that has no place in the runtime image.
+-r requirements.txt
+
+ruff~=0.8
+mypy~=1.13
