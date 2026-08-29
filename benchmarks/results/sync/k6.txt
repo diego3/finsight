@@ -1,0 +1,42 @@
+>> sync: k6 stress.js  (WSGI, 9 gunicorn sync workers · api 4 CPU · db 2 CPU)
+
+     execution: local
+        script: /load/scenarios/stress.js
+        output: Prometheus remote write (http://prometheus:9090/api/v1/write)
+
+     scenarios: (100.00%) 1 scenario, 500 max VUs, 5m0s max duration (incl. graceful stop):
+              * stress: Up to 400.00 iterations/s for 4m30s over 5 stages (maxVUs: 50-500, gracefulStop: 30s)
+
+--- end-of-test summary ---
+     ✓ status 200
+     checks.........................: 100.00% ✓ 32733      ✗ 0    
+     data_received..................: 40 MB   149 kB/s
+     data_sent......................: 2.8 MB  10 kB/s
+     dropped_iterations.............: 6566    24.318372/s
+     http_req_blocked...............: avg=304.59µs min=63.4µs  med=299.02µs max=11.08ms p(90)=417.53µs p(95)=478.23µs
+     http_req_connecting............: avg=226.79µs min=45.32µs med=219.98µs max=10.99ms p(90)=313.1µs  p(95)=361.72µs
+   ✗ http_req_duration..............: avg=919.31ms min=7.01ms  med=19.57ms  max=2.69s   p(90)=2.49s    p(95)=2.56s   
+       { expected_response:true }...: avg=919.31ms min=7.01ms  med=19.57ms  max=2.69s   p(90)=2.49s    p(95)=2.56s   
+   ✓ http_req_failed................: 0.00%   ✓ 0          ✗ 32733
+     http_req_receiving.............: avg=118.36µs min=22.16µs med=112.94µs max=7.38ms  p(90)=165.39µs p(95)=182.57µs
+     http_req_sending...............: avg=58.96µs  min=7.94µs  med=55.97µs  max=3.35ms  p(90)=82.04µs  p(95)=94.17µs 
+     http_req_tls_handshaking.......: avg=0s       min=0s      med=0s       max=0s      p(90)=0s       p(95)=0s      
+     http_req_waiting...............: avg=919.13ms min=6.9ms   med=19.36ms  max=2.69s   p(90)=2.49s    p(95)=2.56s   
+     http_reqs......................: 32733   121.232601/s
+     iteration_duration.............: avg=919.76ms min=7.16ms  med=20.12ms  max=2.69s   p(90)=2.49s    p(95)=2.56s   
+     iterations.....................: 32733   121.232601/s
+     vus............................: 0       min=0        max=500
+     vus_max........................: 500     min=50       max=500
+time="2026-08-29T18:56:18Z" level=error msg="thresholds on metrics 'http_req_duration' have been crossed"
+k6 exit code: 99
+>> benchmarks/results/sync/metrics.json
+{
+  "window_s": 272,
+  "api": {
+    "cpu_avg_cores": 1.390999,
+    "cpu_max_cores": 3.418679,
+    "cpu_limit_cores": 4.0,
+    "throttle_avg_pct": 0.185165,
+    "throttle_max_pct": 0.902935,
+    "mem_max_bytes": 492400640.0,
+    "workers": 9.0
