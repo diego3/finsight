@@ -1,0 +1,37 @@
+>> dev: k6 stress.js  (runserver, 1 process)
+
+     execution: local
+        script: /load/scenarios/stress.js
+        output: Prometheus remote write (http://prometheus:9090/api/v1/write)
+
+     scenarios: (100.00%) 1 scenario, 500 max VUs, 5m0s max duration (incl. graceful stop):
+              * stress: Up to 400.00 iterations/s for 4m30s over 5 stages (maxVUs: 50-500, gracefulStop: 30s)
+
+--- request error breakdown (k6 warnings) ---
+   1073 request timeout
+    337 dial: i/o timeout
+     51 connection reset by peer
+
+--- end-of-test summary ---
+     ✗ status 200
+      ↳  57% — ✓ 3861 / ✗ 2808
+     checks.........................: 57.89% ✓ 3861       ✗ 2808 
+     data_received..................: 31 MB  104 kB/s
+     data_sent......................: 545 kB 1.8 kB/s
+     dropped_iterations.............: 32631  109.910649/s
+     http_req_blocked...............: avg=767.25ms min=0s    med=5.56µs   max=19.74s   p(90)=1.04s    p(95)=5.11s   
+     http_req_connecting............: avg=767.23ms min=0s    med=0s       max=19.74s   p(90)=1.04s    p(95)=5.11s   
+   ✗ http_req_duration..............: avg=11.45s   min=0s    med=25.15ms  max=1m0s     p(90)=58.96s   p(95)=1m0s    
+       { expected_response:true }...: avg=1.08s    min=8.3ms med=19.85ms  max=54.12s   p(90)=643.33ms p(95)=2.1s    
+   ✗ http_req_failed................: 42.10% ✓ 2808       ✗ 3861 
+     http_req_receiving.............: avg=25.27ms  min=0s    med=118.7µs  max=1.05s    p(90)=88.49ms  p(95)=136.38ms
+     http_req_sending...............: avg=33.72µs  min=0s    med=25.23µs  max=494.44µs p(90)=64.72µs  p(95)=82.02µs 
+     http_req_tls_handshaking.......: avg=0s       min=0s    med=0s       max=0s       p(90)=0s       p(95)=0s      
+     http_req_waiting...............: avg=11.43s   min=0s    med=24.9ms   max=1m0s     p(90)=58.96s   p(95)=1m0s    
+     http_reqs......................: 6669   22.463121/s
+     iteration_duration.............: avg=13.74s   min=8.4ms med=397.01ms max=1m0s     p(90)=1m0s     p(95)=1m0s    
+     iterations.....................: 6669   22.463121/s
+     vus............................: 3      min=0        max=500
+     vus_max........................: 500    min=50       max=500
+time="2026-08-29T17:56:43Z" level=error msg="thresholds on metrics 'http_req_duration, http_req_failed' have been crossed"
+[exited with code 99]

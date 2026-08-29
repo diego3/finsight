@@ -1,0 +1,1 @@
+{"label":"dev","scenario":"stress","start":1788025906,"end":1788026203,"window_s":297,"k6_exit":99,"note":"summary.json missing: perms bug in run.sh, since fixed; full k6 output in k6.txt"}
