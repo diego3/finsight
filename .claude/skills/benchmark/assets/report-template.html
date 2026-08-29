@@ -1,0 +1,211 @@
+<title>{{TITLE}}</title>
+<!--
+  Benchmark report template. Copy to benchmarks/<YYYY-MM-DD>-<slug>.html and fill
+  in. Two configs compared: A = warm (#c06a43), B = cool (#1b6ea8) — a validated
+  categorical pair (re-run dataviz's validate_palette.js if you change them).
+
+  Fill every {{...}}. Keep the structure: masthead → verdict → spec → 4 hero
+  deltas → 2 charts → grouped comparison table → findings → next → footer.
+  Load artifact-design + dataviz before editing; publish as an Artifact after.
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --bg: #f4f5f7; --surface: #fff; --surface-2: #fbfbfc;
+    --ink: #1b2027; --muted: #5a626e; --faint: #8b93a0; --line: #e2e5e9;
+    --a: #c06a43; --b: #1b6ea8; --bad: #b0473c; --ok: #3c8659; --neutral-fill: #c7ccd3;
+    --shadow: 0 1px 2px rgba(20,26,36,.06), 0 8px 24px -12px rgba(20,26,36,.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1116; --surface: #171b21; --surface-2: #1b2029;
+      --ink: #e4e8ee; --muted: #99a2b0; --faint: #6c7581; --line: #282e37;
+      --a: #c9793f; --b: #3f92cf; --bad: #d6685c; --ok: #5cb681; --neutral-fill: #3a424d;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1116; --surface: #171b21; --surface-2: #1b2029;
+    --ink: #e4e8ee; --muted: #99a2b0; --faint: #6c7581; --line: #282e37;
+    --a: #c9793f; --b: #3f92cf; --bad: #d6685c; --ok: #5cb681; --neutral-fill: #3a424d;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.5);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 17px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: clamp(2rem,5vw,5rem) clamp(1.1rem,4vw,2.5rem) 6rem; }
+  .col { max-width: 660px; }
+
+  h1,h2,h3 { font-family: "Newsreader", Georgia, serif; font-weight: 500; text-wrap: balance; letter-spacing: -.01em; }
+  h1 { font-size: clamp(2.1rem,5vw,3.1rem); line-height: 1.08; margin: 0 0 .6rem; font-weight: 600; }
+  h2 { font-size: clamp(1.5rem,3vw,1.95rem); line-height: 1.15; margin: 4.5rem 0 1.4rem; }
+  p { margin: 0 0 1.15rem; }
+  a { color: var(--b); text-underline-offset: 2px; }
+
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: .72rem; font-weight: 500;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin: 0 0 1.4rem; }
+  .verdict { font-family: "Newsreader", Georgia, serif; font-size: clamp(1.15rem,2.4vw,1.45rem);
+    line-height: 1.45; color: var(--muted); max-width: 46ch; margin: 0 0 2.4rem; }
+  .verdict strong { color: var(--ink); font-weight: 600; }
+
+  .spec { font-family: "IBM Plex Mono", monospace; font-size: .82rem; line-height: 1.9;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.2rem;
+    color: var(--muted); display: grid; grid-template-columns: max-content 1fr; gap: .1rem 1.4rem; }
+  .spec dt { color: var(--faint); }
+  .spec dd { margin: 0; color: var(--ink); }
+
+  .deltas { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px,1fr)); gap: 1px;
+    background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 2.6rem 0 1rem; }
+  .delta { background: var(--surface); padding: 1.3rem 1.4rem 1.4rem; }
+  .delta .k { font-family: "IBM Plex Mono", monospace; font-size: .7rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: .7rem; }
+  .delta .v { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 1.05rem;
+    display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .delta .from { color: var(--a); } .delta .to { color: var(--b); } .delta .arrow { color: var(--faint); }
+  .delta .note { font-family: "IBM Plex Sans", sans-serif; font-size: .82rem; color: var(--muted); margin-top: .55rem; line-height: 1.4; }
+
+  figure { margin: 0; }
+  figcaption { font-size: .86rem; color: var(--muted); margin-top: .8rem; max-width: 58ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 1.5rem 1.5rem 1.3rem; box-shadow: var(--shadow); }
+  .chart-title { font-family: "IBM Plex Mono", monospace; font-size: .74rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 1.1rem; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0; }
+  @media (max-width: 780px) { .charts { grid-template-columns: 1fr; } }
+
+  .legend { display: flex; gap: 1.3rem; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace;
+    font-size: .78rem; color: var(--muted); margin-top: 1rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  svg text { font-family: "IBM Plex Mono", monospace; }
+  .ax { fill: var(--faint); } .ax-label { fill: var(--muted); } .grid { stroke: var(--line); }
+  .lbl-a { fill: var(--a); } .lbl-b { fill: var(--b); } .lbl-ink { fill: var(--ink); } .lbl-muted { fill: var(--muted); }
+  .fill-a { fill: var(--a); } .fill-b { fill: var(--b); } .fill-neutral { fill: var(--neutral-fill); }
+
+  .table-scroll { overflow-x: auto; margin: 1.5rem 0 .5rem; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { padding: .56rem 1rem; text-align: left; border-bottom: 1px solid var(--line); }
+  thead th { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: .7rem;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+    position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  tbody th { font-weight: 400; color: var(--ink); }
+  td.num, th.num { text-align: right; font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.a { color: var(--a); } td.b { color: var(--b); } td.delta { color: var(--muted); font-size: .84rem; }
+  tr.group th { font-family: "IBM Plex Mono", monospace; font-size: .68rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--faint); background: var(--surface-2); padding: .8rem 1rem; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+
+  .findings { margin-top: 1.5rem; }
+  .finding { padding: 2.1rem 0; border-top: 1px solid var(--line); }
+  .finding:first-child { border-top: none; padding-top: .5rem; }
+  .finding h3 { margin: 0 0 .7rem; font-size: 1.4rem; font-weight: 600; color: var(--ink); }
+  .finding p { max-width: 64ch; } .finding .body p:last-child { margin-bottom: 0; }
+  .pull { font-family: "Newsreader", Georgia, serif; font-weight: 500; font-size: clamp(1.2rem,2.6vw,1.55rem);
+    line-height: 1.35; color: var(--ink); margin: 1.1rem 0; padding-left: 1.1rem; border-left: 2px solid var(--b); }
+  .pull .a { color: var(--a); } .pull .b { color: var(--b); }
+
+  code { font-family: "IBM Plex Mono", monospace; font-size: .88em; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 4px; padding: .08em .38em; }
+  ul.clean { padding-left: 1.1rem; margin: 0 0 1.15rem; }
+  ul.clean li { margin-bottom: .55rem; max-width: 62ch; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 4rem 0; }
+  footer { color: var(--muted); font-size: .9rem; }
+  footer .mono { display: block; margin-top: .5rem; color: var(--faint); font-size: .82rem;
+    font-family: "IBM Plex Mono", monospace; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">FinSight · load benchmark · {{DATE}}</p>
+  <h1>{{TITLE}}</h1>
+  <p class="verdict">{{ONE-PARAGRAPH VERDICT — what the single variable did, in plain terms}}</p>
+
+  <dl class="spec col">
+    <dt>scenario</dt><dd>{{load/scenarios/....js — shape, target, duration}}</dd>
+    <dt>endpoint</dt><dd>{{GET /api/... }}</dd>
+    <dt>one variable</dt><dd>{{what changed}}</dd>
+    <dt>held fixed</dt><dd>{{CPU/mem limits, worker count, data, ...}}</dd>
+    <dt>config A</dt><dd>{{...}}</dd>
+    <dt>config B</dt><dd>{{...}}</dd>
+  </dl>
+
+  <div class="deltas">
+    <!-- 4 headline numbers. from = config A, to = config B. -->
+    <div class="delta"><div class="k">{{METRIC}}</div>
+      <div class="v"><span class="from">{{A}}</span><span class="arrow">&rarr;</span><span class="to">{{B}}</span> {{unit}}</div>
+      <div class="note">{{one line}}</div></div>
+    <div class="delta"><div class="k">{{METRIC}}</div>
+      <div class="v"><span class="from">{{A}}</span><span class="arrow">&rarr;</span><span class="to">{{B}}</span></div>
+      <div class="note">{{one line}}</div></div>
+    <div class="delta"><div class="k">{{METRIC}}</div>
+      <div class="v"><span class="from">{{A}}</span><span class="arrow">&rarr;</span><span class="to">{{B}}</span></div>
+      <div class="note">{{one line}}</div></div>
+    <div class="delta"><div class="k">{{METRIC}}</div>
+      <div class="v"><span class="from">{{A}}</span><span class="arrow">&rarr;</span><span class="to">{{B}}</span></div>
+      <div class="note">{{one line}}</div></div>
+  </div>
+
+  <div class="charts">
+    <figure class="card"><p class="chart-title">{{CHART 1 TITLE}}</p>
+      {{inline SVG bar chart — hand-built, no library. Use fill-a / fill-b / fill-neutral,
+        lbl-* for text, grid for gridlines, ax for tick labels. viewBox ~ 0 0 440 188.}}
+      <figcaption>{{what it shows}}</figcaption></figure>
+    <figure class="card"><p class="chart-title">{{CHART 2 TITLE}}</p>
+      {{inline SVG}}
+      <figcaption>{{what it shows}}</figcaption></figure>
+  </div>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--a)"></span> {{config A}}</span>
+    <span><span class="swatch" style="background:var(--b)"></span> {{config B}}</span>
+  </div>
+
+  <h2>Every number</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Metric</th><th class="num">{{config A}}</th><th class="num">{{config B}}</th><th class="num">&Delta;</th></tr></thead>
+    <tbody>
+      <tr class="group"><th colspan="4">Client-side &mdash; k6</th></tr>
+      <!-- requests completed, throughput, failed %, dropped iterations, http_req_duration p50/p95/max,
+           http_req_connecting p95, http_req_waiting p95, vus_max -->
+      <tr><th scope="row">{{metric}}</th><td class="num a">{{}}</td><td class="num b">{{}}</td><td class="num delta">{{}}</td></tr>
+
+      <tr class="group"><th colspan="4">Server-side &mdash; Django</th></tr>
+      <!-- p50/p95/p99 latency peak, req/s peak, worker count -->
+
+      <tr class="group"><th colspan="4">API container &mdash; cAdvisor</th></tr>
+      <!-- CPU avg/max cores (vs limit), throttling avg/max, memory peak -->
+
+      <tr class="group"><th colspan="4">DB container &mdash; cAdvisor</th></tr>
+      <!-- CPU avg/max cores (vs limit), memory peak -->
+
+      <tr class="group"><th colspan="4">Postgres &mdash; postgres-exporter</th></tr>
+      <!-- rows returned/s, rows fetched/s, xact commit/s, connections max, cache hit ratio, deadlocks -->
+    </tbody>
+  </table></div>
+  <p style="font-size:.86rem;color:var(--muted)">{{caveats: k6 exit code, junk data cleaned, stale-container note, ...}}</p>
+
+  <h2>Reading it</h2>
+  <div class="findings">
+    <div class="finding"><h3>{{finding}}</h3><div class="body"><p>{{...}}</p></div></div>
+    <!-- 4-6 findings. Use one <p class="pull"> for the single most striking ratio. -->
+  </div>
+
+  <h2>Next</h2>
+  <ul class="clean"><li>{{follow-up}}</li></ul>
+
+  <hr>
+  <footer>
+    <p>Run with <code>benchmarks/run.sh {{A}} {{scenario}}</code> and <code>benchmarks/run.sh {{B}} {{scenario}}</code>,
+    {{gap}} apart on the same machine ({{N}}-core host). Raw artifacts in
+    <code>benchmarks/results/{{A},{B}}/</code>.</p>
+    <span class="mono">FinSight · {{branch}}</span>
+  </footer>
+</div>
