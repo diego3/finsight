@@ -23,8 +23,10 @@ threads = int(os.getenv("GUNICORN_THREADS", "1"))
 timeout = int(os.getenv("GUNICORN_TIMEOUT", "30"))
 graceful_timeout = 30
 keepalive = 5
-max_requests = 1000
-max_requests_jitter = 100
+# Recycle workers to bound leaks. Set GUNICORN_MAX_REQUESTS=0 to disable it
+# (e.g. during a benchmark, where mid-run recycling is just noise).
+max_requests = int(os.getenv("GUNICORN_MAX_REQUESTS", "1000"))
+max_requests_jitter = 100 if max_requests else 0
 accesslog = "-"
 errorlog = "-"
 forwarded_allow_ips = "*"
