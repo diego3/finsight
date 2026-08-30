@@ -12,4 +12,4 @@ Default five canonical triage labels (`needs-triage`, `needs-info`, `ready-for-a
 
 ### Domain docs
 
-Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root (neither exists yet; created lazily). See `docs/agents/domain.md`.
+Single-context: `CONTEXT.md` at the repo root holds the domain glossary; `docs/adr/` (not created yet) will hold architecture decisions. Product model in `docs/product/advisor-workflows.md`. See `docs/agents/domain.md` for consumer rules.

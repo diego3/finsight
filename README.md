@@ -9,6 +9,11 @@ The project is developed feature-by-feature in a mentor-guided, phase-by-phase w
 model, tech stack, and all planned phases from project setup through production
 verification and architecture review).
 
+For the product lens — what a financial advisor actually does, the two flagship workflows,
+and the MVP feature sequence — see
+[`docs/product/advisor-workflows.md`](docs/product/advisor-workflows.md). Domain vocabulary
+lives in [`CONTEXT.md`](CONTEXT.md).
+
 Status: prototype in progress — first vertical slice (Client Management) being built.
 
 ## Repository layout
