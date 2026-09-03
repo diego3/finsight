@@ -1,0 +1,37 @@
+{
+  "window_s": 272,
+  "api": {
+    "cpu_avg_cores": 1.390999,
+    "cpu_max_cores": 3.418679,
+    "cpu_limit_cores": 4.0,
+    "throttle_avg_pct": 0.185165,
+    "throttle_max_pct": 0.902935,
+    "mem_max_bytes": 492400640.0,
+    "workers": 9.0
+  },
+  "db": {
+    "cpu_avg_cores": 0.766905,
+    "cpu_max_cores": 2.001246,
+    "cpu_limit_cores": 2.0,
+    "mem_max_bytes": 42168320.0
+  },
+  "django": {
+    "rps_max": 220.488889,
+    "p50_max_s": 0.02748,
+    "p95_max_s": 0.076034,
+    "p99_max_s": 0.095207
+  },
+  "postgres": {
+    "rows_returned_per_s_max": 45945.933333,
+    "rows_fetched_per_s_max": 43444.555556,
+    "xact_commit_per_s_max": 843.844444,
+    "rows_written_per_s_max": 0.0,
+    "connections_max": 8.0,
+    "cache_hit_ratio_min": 0.999788,
+    "deadlocks_total": 0.0
+  },
+  "k6": {
+    "reqs_per_s_max": 214.288567,
+    "vus_max": 500.0
+  }
+}

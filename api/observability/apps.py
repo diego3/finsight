@@ -5,6 +5,7 @@ class ObservabilityConfig(AppConfig):
     name = "observability"
 
     def ready(self) -> None:
-        from .collectors import start_runtime_metrics
+        # Deferred import: settings must be configured before prometheus_client loads.
+        from .runtime_metrics import install
 
-        start_runtime_metrics()
+        install()

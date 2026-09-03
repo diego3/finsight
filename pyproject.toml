@@ -24,12 +24,6 @@ select = [
 # them; it is noise for this style of code.
 extend-ignore = ["RUF012"]
 
-[tool.ruff.lint.per-file-ignores]
-# Predates the linter: a dense one-metric-per-line block and a few bare
-# try/except/pass guards in the sampler. Left as-is deliberately for now;
-# cleaning it is tracked separately so this change stays about testing.
-"api/observability/collectors.py" = ["E501", "SIM105", "SIM112"]
-
 [tool.mypy]
 python_version = "3.13"
 strict = true
